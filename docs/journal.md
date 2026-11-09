@@ -20,3 +20,4 @@
 - Aucune modification de Docker ou de `.env`; aucun choix de contrat v1 n'a été figé. Travail documentaire seulement; aucun test de code n'était applicable.
 - Mise à jour de la note avec une introduction expliquant son importance et le rôle de Mouad, puis ajout de réponses au regard du prompt maître pour le schéma, l'horodatage, les fenêtres, le watermark, les checkpoints, les doublons PostgreSQL et les partitions.
 - La vérification CI de la pull request existante a révélé un échec Ruff préexistant sur l'ordre des imports de `manage.py`; ordre corrigé dans la branche propre pour obtenir une CI vérifiable avant fusion.
+- Le contrôle CI de la PR #2 a ensuite révélé que pytest ne trouvait pas `manage` lors de la collecte des tests. Ajout de la racine du dépôt à `pythonpath` dans la configuration pytest pour rendre la collecte déterministe en CI.
