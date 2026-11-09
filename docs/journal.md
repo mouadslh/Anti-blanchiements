@@ -57,3 +57,60 @@
 - Remplacer « UTRF » par « ANRF (ex-UTRF) » dans `MASTER_PROMPT_PFA_AML.md` après accord de l'équipe.
 - Champ « bénéficiaire effectif » absent du contrat de données v1 : à discuter avant le gel du contrat (phase 2).
 - Validation du catalogue par le Pr Chergui.
+
+## 2026-11-09 — Phase 1 (hypothèses du simulateur v1)
+
+**Phase :** Phase 1 (semaine 1, côté Mounir). Ticket Jira « Hypothèses du simulateur v1 ».
+
+**Travail réalisé**
+
+- Création de `docs/simulator_assumptions.md` (v1, brouillon) : population (profils salariés, étudiants, commerçants, entreprises), volumes, montants, canaux, contreparties, rythmes quotidiens, hebdomadaires et mensuels, saisonnalité Ramadan et Aïd, comportements normaux « piégeux » (source de fausses alertes), taux de comptes et de transactions suspects, résumé des paramètres des scénarios, limites des données simulées.
+- Chaque valeur est marquée **[H]** (hypothèse) avec sa justification ; les hypothèses H-01 à H-07 de `docs/typologies.md` gardent leur numéro, les nouvelles vont de H-08 à H-23.
+- Distinction explicite entre **proportion de comptes impliqués** (contrainte < 1 %) et **proportion de transactions suspectes** (comparable aux jeux publics). Profils : `light` 0,76 % de comptes et 0,08 % de transactions ; `full` 0,57 % et 0,06 %.
+- Volumes calculés à partir des hypothèses : moyenne pondérée de 79,7 transactions par client sur 90 jours, soit environ 398 500 transactions pour 5 000 clients et 1,59 million pour 20 000.
+- Tableau des écarts entre `MASTER_PROMPT_PFA_AML.md` (ligne 54) et `Roadmap_PFA_Detection_Blanchiment.md` (lignes 50 et 96) avec résolution proposée (reprise de D-1 à D-6).
+- Dates du Ramadan 1448 (8 février 2027) et de l'Aïd el-Fitr (9 ou 10 mars 2027) issues de **prévisions astronomiques de presse**, non officielles : marquées [À vérifier] ; utilisées uniquement comme dates fictives de simulation.
+
+**Décisions (à valider par l'équipe)**
+
+- Période simulée du 2027-01-15 au 2027-04-14 (90 jours) pour contenir un Ramadan et un Aïd.
+- Densité de 80 transactions par client conservée entre `light` et `full`.
+- Les valeurs de population, de volume, de montant et de rythme sont toutes des hypothèses, aucune source marocaine n'ayant été trouvée.
+- Chaque cas doit tenir dans un seul bloc d'évaluation (H-23).
+
+**Questions ouvertes**
+
+- Validation de la résolution des volumes et des taux, puis alignement de `MASTER_PROMPT_PFA_AML.md` et de la feuille de route.
+- Avec la date de début retenue, le Ramadan tombe dans le bloc d'entraînement et pas dans le test : décalage à assumer ou à corriger.
+- Les durées par défaut de certains cas (flux circulaires : 30 jours ; fractionnement : 14 jours) sont longues par rapport aux blocs d'évaluation ; raccourcir ou allonger la période (par exemple 120 jours pour `full`).
+- Réalisme des cas normaux « piégeux » et poids des profils : relecture par le Pr Chergui.
+- Champs absents du contrat v1 (solde, bénéficiaire effectif, pays de destination), tailles de cas H-07 à recalculer avec le vrai simulateur, textes de Bank Al-Maghrib à lire à la main.
+- Travail documentaire seulement ; aucun test de code n'était applicable.
+
+## 2026-11-09 — Phase 1 (plan d'évaluation v1 et matrice de coûts)
+
+**Phase :** Phase 1 (semaine 1, côté Mounir). Ticket Jira « Plan d'évaluation v1 et matrice de coûts ».
+
+**Travail réalisé**
+
+- Création de `docs/evaluation_plan.md` (v1, brouillon), rédigé avant tout entraînement : unité d'alerte (compte, jour), définition d'un cas détecté, découpage temporel, règles anti-fuite, métriques, matrice de coûts, analyse de sensibilité, protocole d'exécution, limites.
+- **Découpage temporel** (jours 1 à 90) : échauffement 1–7, entraînement 8–56, validation 57–72, test 73–90 ; aucun mélange aléatoire ; test unique par graine après gel des choix ; test d'invariance au futur prévu en phase 4.
+- **Métriques** : precision@k et recall@k par jour (k = 50 par défaut, configurable dans `config/scoring.yaml`), rappel par typologie et par niveau avec intervalles de Wilson, délai de détection, courbe précision-rappel, coût total, latence p50/p95/p99 et débit.
+- **Matrice de coûts** (hypothèses) : `c_FP` = 1 unité (une revue d'alerte), `c_FN` = 200 unités ; sensibilité sur `r = c_FN / c_FP` ∈ {10, 50, 100, 200, 500, 1000} et sur `k` ∈ {10, 25, 50, 100, 200}. Coûts relatifs, non chiffrés en MAD faute de source.
+
+**Constats importants**
+
+- **Plafond de la precision@k** : avec une dizaine à une trentaine de comptes positifs par jour dans le test `full` (estimation à recalculer), une precision@50 est plafonnée à environ 0,2 à 0,6 même pour un détecteur parfait. Proposition : rapporter aussi le plafond et la precision@k normalisée.
+- **Peu de positifs d'entraînement** : environ 38 comptes par graine dans le bloc d'entraînement `full`. Deux options proposées (modèle par graine, ou entraînement sur les autres graines).
+
+**Décisions (à valider par l'équipe)**
+
+- Les cinq scénarios placent chacun un cas dans chaque bloc, avec une permutation des niveaux tirée de la graine : 5 cas de test par graine, 25 avec 5 graines.
+- Latence technique mesurée de la publication Kafka à l'alerte ; délai de détection métier mesuré à part.
+
+**Questions ouvertes**
+
+- Option A ou B pour l'entraînement ; durée maximale des cas (16 jours selon la règle L-6) ; présentation de la precision@k avec son plafond.
+- Formulation « temps événementiel jusqu'à l'alerte » du prompt maître non mesurable avec un rejeu accéléré ; `top-k` calculé en fin de journée ou en ligne.
+- Valeurs de `c_FN` et de `k` à discuter avec le Pr Chergui ; fixer les paramètres du test de dérive avant l'évaluation finale.
+- Travail documentaire seulement ; aucun test de code n'était applicable.
