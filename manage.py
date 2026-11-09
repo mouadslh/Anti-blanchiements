@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+import os
 import subprocess
 import sys
 import time
-import base64
-import os
 import unittest
 import urllib.request
 from pathlib import Path
