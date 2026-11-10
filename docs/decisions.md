@@ -15,6 +15,7 @@
 - Le code de validation utilise la bibliothèque standard afin de ne pas ajouter de dépendance pour valider JSON, timestamps UTC et nombres décimaux.
 - La forme des messages `features` est proposée par compte et fenêtre, avec une clé PostgreSQL `(account_id, window_start, window_end)`. Les sorties de score et d'alerte sont provisoirement uniques par `tx_id`. Ces clés rendent possibles des écritures rejouables, mais doivent être confirmées par les deux étudiants avant gel.
 - `sql/schema.sql` garde la table `labels` isolée des tables lues par le scoring. Les contraintes portent la même validation enum que les schémas Python.
+- Le DDL de phase 2 ne crée pas de rôle applicatif; l'intégration devra fournir au service de scoring un rôle sans privilège `SELECT` sur `labels`.
 - La spécification attribuée à Mounir n'est pas présente dans `origin/main` actuel; aucune affirmation de réconciliation avec ce document n'est faite ici. Le contrat reste une proposition tant qu'une revue croisée n'a pas eu lieu.
 - Le plan d'évaluation de phase 1 fixe une unité d'alerte compte/jour, alors que le message de score du prompt est transactionnel (`tx_id`). La granularité et l'agrégation des alertes restent une décision commune; la clé provisoire du DDL ne doit pas être interprétée comme un choix final.
 - Les documents de phase 1 signalent aussi des champs candidats absents du contrat maître (solde, bénéficiaire effectif, pays de destination). Aucun n'a été ajouté sans décision des deux étudiants.

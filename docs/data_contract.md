@@ -61,7 +61,7 @@ Proposition : mêmes champs d'identification et de score que `scores`, plus `exp
 
 ## 3. Labels et schéma PostgreSQL
 
-Les labels utilisent les colonnes du prompt maître : `account_id`, `tx_id`, `scenario`, `role`, `start_ts`, `end_ts`. `tx_id` peut être nul pour un label portant sur une période ou un compte plutôt que sur une transaction unique. Les labels sont isolés dans leur table; aucun accès du service de scoring ne doit être configuré.
+Les labels utilisent les colonnes du prompt maître : `account_id`, `tx_id`, `scenario`, `role`, `start_ts`, `end_ts`. `tx_id` peut être nul pour un label portant sur une période ou un compte plutôt que sur une transaction unique. Les labels sont isolés dans leur table. Le DDL de cette phase ne crée pas encore de rôles ni de permissions PostgreSQL; lors de l'intégration, le service de scoring devra utiliser un rôle sans droit de lecture sur `labels`.
 
 Le DDL de `sql/schema.sql` matérialise la proposition et peut être appliqué plusieurs fois (`CREATE ... IF NOT EXISTS`). Les clés de features, scores et alertes sont des décisions de conception proposées pour rendre les écritures rejouables; elles restent à valider avant d'être considérées comme gelées.
 
