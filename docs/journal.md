@@ -114,3 +114,12 @@
 - Formulation « temps événementiel jusqu'à l'alerte » du prompt maître non mesurable avec un rejeu accéléré ; `top-k` calculé en fin de journée ou en ligne.
 - Valeurs de `c_FN` et de `k` à discuter avec le Pr Chergui ; fixer les paramètres du test de dérive avant l'évaluation finale.
 - Travail documentaire seulement ; aucun test de code n'était applicable.
+
+## 2026-11-10 — Phase 2 : contrat et schémas (Mouad)
+
+- Rédigé `docs/data_contract.md` selon la section 6 du prompt maître; le statut reste « proposition à valider » par Mouad et Mounir.
+- Implémenté les validateurs Python pour `transactions`, `features`, `scores` et `alerts` dans `src/aml/common/schemas.py`; le schéma de transaction rejette notamment les champs de label.
+- Créé `sql/schema.sql` pour transactions brutes, features, scores, alertes et labels séparés, avec clés et index proposés pour faciliter les reprises idempotentes.
+- Ajouté les tests de contrat dans `tests/test_schemas.py`. Avec Python 3.11.17 : `pytest tests/test_schemas.py -q` réussit (16 tests) et la suite complète `pytest -q` réussit (19 tests); `ruff check .`, `compileall` et `git diff --check` réussissent également. Pytest et Ruff ont été installés temporairement sous `/private/tmp`, sans modification de l'environnement global.
+- Le démon Docker n'était pas actif, donc le DDL n'a pas été appliqué à la base locale; `sql/schema.sql` est livré comme script de création idempotent, à appliquer et vérifier lorsque PostgreSQL sera disponible.
+- La spécification `docs/specification_technique_aml.md` attribuée à Mounir n'est pas présente dans le `origin/main` actuel; sa comparaison reste ouverte. Les livrables de phase 1 présents dans `origin/main` soulèvent aussi deux points pour la revue commune : unité d'alerte compte/jour versus score transactionnel, et champs candidats (solde, bénéficiaire effectif, pays de destination) absents du prompt maître. Aucun fichier Docker ou `.env` n'a été modifié.
