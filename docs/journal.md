@@ -124,3 +124,46 @@
 - Ajouté les tests de contrat dans `tests/test_schemas.py`. Avec Python 3.11.17 : `pytest tests/test_schemas.py -q` réussit (16 tests) et la suite complète `pytest -q` réussit (19 tests); `ruff check .`, `compileall` et `git diff --check` réussissent également. Pytest et Ruff ont été installés temporairement sous `/private/tmp`, sans modification de l'environnement global.
 - Le démon Docker n'était pas actif, donc le DDL n'a pas été appliqué à la base locale; `sql/schema.sql` est livré comme script de création idempotent, à appliquer et vérifier lorsque PostgreSQL sera disponible.
 - La spécification `docs/specification_technique_aml.md` attribuée à Mounir n'est pas présente dans le `origin/main` actuel; sa comparaison reste ouverte. Les livrables de phase 1 présents dans `origin/main` soulèvent aussi deux points pour la revue commune : unité d'alerte compte/jour versus score transactionnel, et champs candidats (solde, bénéficiaire effectif, pays de destination) absents du prompt maître. Aucun fichier Docker ou `.env` n'a été modifié.
+
+## 2026-11-10 — Phase 2 : spécification technique du contrat v1 (Mounir)
+
+**Phase :** **Phase 2** (contrat et schémas, côté Mounir). Ticket Jira « Spécification technique du contrat v1 ».
+
+**Changements effectués**
+
+- Création de `docs/specification_technique_aml.md` : proposition de contrat v1 pour les topics `transactions`, `features`, `scores` et `alerts`, pour les labels et pour les écritures PostgreSQL. Elle contient un tableau de comparaison (prompt maître, ancienne spécification, proposition de Mouad), les décisions C-01 à C-14, les questions ouvertes Q-01 à Q-10, des exemples de messages et une liste de contrôle pour la revue de Mouad.
+- Ajout de cette entrée au journal.
+- **Aucun autre fichier modifié.** Ni `docker-compose.yml`, ni `.env`, ni `.env.example`, ni `schemas.py`, ni `sql/schema.sql`, ni les tests : ces fichiers dépendent des choix proposés et ne seront modifiés qu'après validation commune.
+
+**Décisions proposées et justification**
+
+- **Noms du prompt maître conservés** (`tx_id`, `timestamp`, `source_account_id`, `target_account_id`), avec une table de correspondance depuis `transaction_id`, `event_time`, `account_id`. Justification : le prompt est la référence commune, et Mouad a déjà implémenté ces noms.
+- **`timestamp` = heure d'exécution simulée en UTC ; le jitter ne modifie que l'ordre d'arrivée.** Justification : les fenêtres Spark et les tests de fuite reposent sur le temps événementiel (note de Mouad).
+- **Montant strictement positif, 2 décimales, `currency` = `MAD`.** Justification : le sens du flux est porté par le canal, et les commissions du layering se lisent dans la différence de montant.
+- **Convention des comptes (`acct-`, `ext-`, `ext-cash`) et direction des flux par canal.** Justification : le prompt ne dit pas qui est la source d'un dépôt ou d'un retrait d'espèces ; une convention centrée sur le compte client garde une bonne clé de partition et donne un sens aux ratios entrées/sorties.
+- **`features` émis par (compte, transaction déclenchante), clé `(account_id, tx_id)`, fenêtres arrière arrêtées à `as_of`.** Justification : cela relie directement `features` à `scores` (clé du prompt), exclut toute fuite par construction et borne l'état Spark. Remplace `window_start` / `window_end` de la proposition actuelle.
+- **`scores` : clé `(tx_id, account_id)`, `ts` simulé.** Justification : une transaction concerne deux comptes, donc la clé `tx_id` seule de `sql/schema.sql` provoquerait des collisions ; un `ts` simulé rend le message rejouable à l'identique.
+- **`alerts` : unité (compte, jour UTC), seuil en ligne, top-k calculé en évaluation, upsert qui garde le score maximal.** Justification : alignement avec `evaluation_plan.md` ; le maximum est commutatif, donc l'ordre de rejeu n'a pas d'effet.
+- **Labels : ajout de `case_id` et `sophistication`, énumérations `scenario` et `role`.** Justification : nécessaires pour définir un « cas détecté » et le rappel par niveau (`evaluation_plan.md`). Labels toujours hors des topics.
+- **Idempotence : une règle d'écriture par table, tx_id déterministe, une graine par base.**
+- **1 partition Kafka conservée**, clés définies pour passer plus tard à plusieurs partitions sans changer le contrat.
+
+**Divergences résolues dans la proposition**
+
+- `card` contre `card_payment` : `card` retenu (à corriger dans `simulator_assumptions.md`).
+- Unité d'alerte compte/jour contre score par transaction : deux niveaux (score par compte et transaction, alerte par compte et jour).
+- Clés `tx_id` seules dans le DDL : remplacées par des clés contenant le compte.
+
+**Divergences et questions signalées pour décision commune** (détail en section 10 du document)
+
+- Format d'émission des `features` (Q-01) : faisabilité Spark à confirmer par Mouad ; alternative décrite (instantané horaire).
+- Valeur du watermark et jitter (Q-02) ; extension `layer_scores` (Q-03) ; champs solde, bénéficiaire effectif, pays absents en v1 (Q-04, recommandation : ne pas les ajouter) ; fuseau du rythme journalier (Q-07) ; énumération `role` (Q-08) ; graines multiples hors ligne (Q-09) ; rôle PostgreSQL du scoring, qui exigera une modification de Docker donc un accord commun (Q-10).
+
+**Limites et points non vérifiés**
+
+- **La spécification d'origine `specification_technique_aml.md` n'était pas dans le dépôt.** La comparaison avec elle se limite aux trois noms de champs connus par la note de Mouad (`transaction_id`, `event_time`, `account_id`). Autres écarts à reporter depuis la copie locale (Q-05) avant l'envoi en revue.
+- Travail documentaire : aucun code ni DDL modifié. Vérifications faites : les 4 exemples de transactions du document passent `validate_transaction`, les 7 blocs JSON sont syntaxiquement valides, `pytest -q` (19 tests) et `ruff check .` réussissent sur le dépôt inchangé. Les exemples `features`, `scores` et `alerts` **ne passent pas** le validateur actuel : c'est voulu, leur forme diffère de la proposition de Mouad (section 11 du document).
+- Les valeurs des exemples de `features`, de scores et de l'explication sont illustratives, pas issues d'une exécution.
+- Docker non testé : aucune modification de la pile.
+
+**Prochaine étape :** revue de Mouad (réponses Q-01 à Q-10, puis `VALIDATED phase 2` ou corrections). Mise à jour de `schemas.py`, de `sql/schema.sql`, des tests et de `docs/decisions.md` seulement après cet accord.
