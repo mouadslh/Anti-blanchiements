@@ -167,3 +167,15 @@
 - Docker non testé : aucune modification de la pile.
 
 **Prochaine étape :** revue de Mouad (réponses Q-01 à Q-10, puis `VALIDATED phase 2` ou corrections). Mise à jour de `schemas.py`, de `sql/schema.sql`, des tests et de `docs/decisions.md` seulement après cet accord.
+
+## 2026-11-12 — Phase 3 : simulateur normal et rejeu (Mouad)
+
+**Périmètre :** uniquement les tâches individuelles de Mouad. Les scénarios de blanchiment, leurs labels, la sélection éventuelle d'un jeu public et la génération finale commune ne sont pas inclus.
+
+- Ajout de `src/aml/simulator/normal.py` : génération reproductible des profils clients, comptes, transactions normales, contreparties, montants, canaux, villes, heures et dates de simulation; ordre global chronologique et identifiants stables par graine. Les événements passent par le validateur existant et n'embarquent aucun label.
+- Extension de `manage.py simulate` : profils `light`/`full`, `--seed`, `--output`, `--report`, `--replay`, `--store-raw` et `--rate` (100 par défaut, plafond 500).
+- Ajout de l'extra optionnel `.[streaming]` (Confluent Kafka et psycopg) ; publication idempotente vers `transactions` et insertion PostgreSQL avec `ON CONFLICT (tx_id) DO NOTHING`.
+- Ajout de `docs/simulator_usage.md` avec commandes, hypothèses et limites. Les statistiques scénario/taux suspect ne sont pas inventées avant intégration de la tâche Mounir.
+- Aucun changement de Docker Compose, `.env`, schéma SQL, contrat partagé, fichier de roadmap, scénario ou label. La roadmap locale de l'utilisateur demeure hors de ce commit.
+
+**Validation d'intégration :** services Docker non démarrés ici; Kafka/PostgreSQL ne sont donc pas contactés. Les opérations `--replay` et `--store-raw` nécessitent les dépendances optionnelles et les services déjà prêts. (À compléter après revue/validation de l'équipe.)
