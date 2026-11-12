@@ -13,6 +13,8 @@ import unittest
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
 ROOT = Path(__file__).resolve().parent
 TOPICS = ("transactions", "features", "scores", "alerts")
 
@@ -106,6 +108,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="AML project command line")
     parser.add_argument("command", choices=("up", "down", "simulate", "train", "evaluate", "test", "reset"))
     parser.add_argument("--report", action="store_true", help="Print a simulation statistics report")
+    parser.add_argument("--profile", choices=("light", "full"), default="light", help="Simulation population profile")
+    parser.add_argument("--seed", type=int, default=42, help="Deterministic random seed")
+    parser.add_argument("--output", type=Path, help="CSV output path (default: data/transactions/normal-<profile>-seed<seed>.csv)")
+    parser.add_argument("--replay", action="store_true", help="Replay the generated CSV to Kafka")
+    parser.add_argument("--store-raw", action="store_true", help="Idempotently store generated events in PostgreSQL")
+    parser.add_argument("--rate", type=int, default=100, help="Kafka replay rate, 1 to 500 events/second")
+    parser.add_argument("--duration", type=float, help="Stop Kafka replay after this many seconds")
     args = parser.parse_args()
     try:
         if args.command == "up":
@@ -122,10 +131,40 @@ def main() -> int:
             suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
             result = unittest.TextTestRunner(verbosity=2).run(suite)
             return 0 if result.wasSuccessful() else 1
+        elif args.command == "simulate":
+            from aml.simulator.normal import (
+                generate_transactions,
+                publish_kafka,
+                report_json,
+                store_postgres,
+                summarize_csv,
+                write_csv,
+            )
+
+            output = args.output or ROOT / "data" / "transactions" / f"normal-{args.profile}-seed{args.seed}.csv"
+            count = write_csv(generate_transactions(profile=args.profile, seed=args.seed), output)
+            print(f"{count} transaction(s) normales écrites dans {output}")
+            if args.report:
+                print(report_json(summarize_csv(output)))
+            if args.replay:
+                bootstrap_servers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+                sent = publish_kafka(output, rate=args.rate, bootstrap_servers=bootstrap_servers,
+                                     duration=args.duration)
+                print(f"{sent} transaction(s) publiées dans Kafka:transactions")
+            if args.store_raw:
+                dsn = os.environ.get("DATABASE_URL") or (
+                    f"host={os.environ.get('POSTGRES_HOST', 'localhost')} "
+                    f"port={os.environ.get('POSTGRES_PORT', '5433')} "
+                    f"dbname={os.environ.get('POSTGRES_DB', 'aml')} "
+                    f"user={os.environ.get('POSTGRES_USER', 'aml')} "
+                    f"password={os.environ.get('POSTGRES_PASSWORD', 'aml_local_dev')}"
+                )
+                inserted = store_postgres(output, dsn=dsn)
+                print(f"{inserted} transaction(s) brutes insérées (les tx_id déjà présents sont ignorés)")
         else:
             print(f"'{args.command}' is a Phase 0 skeleton; implemented in its scheduled phase.", file=sys.stderr)
             return 2
-    except (subprocess.CalledProcessError, RuntimeError, OSError) as error:
+    except (subprocess.CalledProcessError, RuntimeError, OSError, ValueError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
     return 0
