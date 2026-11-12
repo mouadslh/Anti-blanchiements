@@ -8,18 +8,19 @@ from __future__ import annotations
 
 import bisect
 import csv
-import itertools
 import heapq
+import itertools
 import json
 import math
 import random
 from collections import Counter
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any
 
 from aml.common.schemas import validate_transaction
 
@@ -89,7 +90,7 @@ def _population(count: int, seed: int) -> list[Customer]:
     return customers
 
 
-@lru_cache(maxsize=None)
+@cache
 def _day_cdf(profile: str, channel: str) -> tuple[tuple[float, ...], float]:
     """Cached day-weight cumulative distribution for each profile/channel."""
     day_weights: list[float] = []
@@ -105,9 +106,13 @@ def _day_cdf(profile: str, channel: str) -> tuple[tuple[float, ...], float]:
         # The dates are simulation hypotheses, not a claim about an official calendar.
         if current.day >= 25 and profile == "salaried" and channel in {"card", "cash_withdrawal"}:
             weight *= 1.15
-        if datetime(2027, 2, 8, tzinfo=UTC).date() <= current.date() <= datetime(2027, 3, 8, tzinfo=UTC).date():
-            if channel in {"card", "cash_withdrawal"}:
-                weight *= 1.05
+        if (
+            datetime(2027, 2, 8, tzinfo=UTC).date()
+            <= current.date()
+            <= datetime(2027, 3, 8, tzinfo=UTC).date()
+            and channel in {"card", "cash_withdrawal"}
+        ):
+            weight *= 1.05
         if current.date() in {datetime(2027, 3, 9, tzinfo=UTC).date(), datetime(2027, 3, 10, tzinfo=UTC).date()}:
             weight *= .5
         day_weights.append(weight)
@@ -125,9 +130,13 @@ def _event_time(rng: random.Random, profile: str, channel: str) -> datetime:
             rng, (((0, 6), .02), ((6, 12), .28), ((12, 18), .38), ((18, 24), .32))
         )
         hour = rng.randrange(*hour_range)
-    if datetime(2027, 2, 8, tzinfo=UTC).date() <= current.date() <= datetime(2027, 3, 8, tzinfo=UTC).date():
-        if channel in {"card", "cash_withdrawal"}:
-            hour = rng.choice((hour, rng.randrange(18, 24), rng.randrange(0, 2)))
+    if (
+        datetime(2027, 2, 8, tzinfo=UTC).date()
+        <= current.date()
+        <= datetime(2027, 3, 8, tzinfo=UTC).date()
+        and channel in {"card", "cash_withdrawal"}
+    ):
+        hour = rng.choice((hour, rng.randrange(18, 24), rng.randrange(0, 2)))
     return current.replace(hour=hour, minute=rng.randrange(60), second=rng.randrange(60),
                            microsecond=0)
 
@@ -204,7 +213,7 @@ def summarize_csv(path: str | Path) -> dict[str, Any]:
             count += 1
             profiles[event["source_customer_type"]] += 1
             channels[event["channel"]] += 1
-            timestamp = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
+            timestamp = datetime.fromisoformat(event["timestamp"])
             hours[timestamp.hour] += 1
             days[timestamp.strftime("%A")] += 1
     return {"transactions": count, "by_profile": dict(sorted(profiles.items())),
