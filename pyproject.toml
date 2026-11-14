@@ -10,7 +10,7 @@ requires-python = ">=3.11,<3.12"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9", "ruff>=0.8,<1"]
+dev = ["pytest>=8,<9", "ruff>=0.8,<1", "pyyaml>=6,<7"]
 streaming = ["confluent-kafka>=2.6,<3", "psycopg[binary]>=3.2,<4"]
 
 [tool.pytest.ini_options]
