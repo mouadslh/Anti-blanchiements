@@ -179,3 +179,39 @@
 - Aucun changement de Docker Compose, `.env`, schéma SQL, contrat partagé, fichier de roadmap, scénario ou label. La roadmap locale de l'utilisateur demeure hors de ce commit.
 
 **Validation d'intégration :** services Docker non démarrés ici; Kafka/PostgreSQL ne sont donc pas contactés. Les opérations `--replay` et `--store-raw` nécessitent les dépendances optionnelles et les services déjà prêts. (À compléter après revue/validation de l'équipe.)
+
+## 2026-11-13 — Phase 3 : injection des scénarios AML et labels (Mounir)
+
+**Phase :** Phase 3 (simulateur, côté Mounir). Ticket Jira « Injecter les scénarios AML et produire les labels ».
+
+**Travail réalisé**
+
+- Ajout de `src/aml/simulator/scenario_config.py` (défauts, plages du catalogue, validation, tirage des paires `[min, max]`), `scenarios.py` (les cinq constructeurs : fractionnement, layering, comptes relais, flux circulaires, sociétés écran), `dataset.py` (plan des cas, placement, fusion avec le flux normal, `tx_id`, labels, manifeste) et `labels.py` (schéma, validation, CSV, rapport). Ajout de `config/simulator.yaml` (copie exacte des défauts, vérifiée par test).
+- `python manage.py simulate` injecte maintenant les scénarios par défaut et écrit les labels à part (`data/labels/`) ; `--normal-only` conserve l'ancien comportement ; `--scenario-config` charge des surcharges YAML ; `--labels-output` choisit la sortie des labels. Le rapport `--report` remplace les trois champs « non générés » par des valeurs mesurées.
+- Labels : `account_id, tx_id, scenario, role, start_ts, end_ts, case_id, sophistication` (contrat C-11 de `specification_technique_aml.md`). Lignes compte-rôle (`tx_id` vide) et lignes transaction. Aucun label dans le CSV de transactions ni dans Kafka : `validate_transaction` rejette tout champ inconnu et un test rejoue des transactions de scénario via `publish_kafka` (producteur simulé) pour vérifier les messages.
+- Pilotage par nombre de cas (D-2), niveaux `low`/`medium`/`high` (section 5 de `typologies.md`), déterminisme par graine, un compte au plus par cas. `light` : 1 cas par scénario au niveau `medium` ; `full` : 15 cas, un cas par bloc et par scénario avec permutation des niveaux tirée de la graine (`evaluation_plan.md` 2.5). La génération échoue si le taux de comptes étiquetés atteint 1 %.
+- Fenêtres de silence du comportement normal : comptes relais (`account_age_days`) et sociétés écran (`dormancy_days`) n'ont plus de transactions normales avant leur activité.
+- Hypothèses ajoutées (H-24 à H-29, `docs/simulator_assumptions.md`, section 9 bis) : montant et fenêtre de réception des comptes relais, montant initial et mélange des flux circulaires, durée du pic et façade des sociétés écran, sources entrantes = vrais clients dédiés au cas, camouflage non étiqueté au niveau transaction, virements d'entreprise en jours ouvrés.
+
+**Corrections du simulateur normal (nécessaires, hors périmètre initial)**
+
+- `generate_transactions` plantait dès la première transaction : `TypeError` sur le tirage de l'heure (`hour, hour_range = ...` dépaquetait un tuple) puis `IndexError` pour les clients sans contrepartie externe (canal `card`, environ 40 % des étudiants). Corrigé dans `normal.py` (deux modifications minimales) et couvert par un test. Le journal du 2026-11-12 ne signalait pas ce plantage : à relire avec Mouad. Les flux générés avant ce correctif n'existent donc pas.
+
+**Résultats mesurés (graine 42)**
+
+| Profil | Transactions | Comptes étiquetés | Taux de comptes | Transactions de scénario | Taux de transactions | Camouflage |
+| --- | --- | --- | --- | --- | --- | --- |
+| `light` (5 cas) | 399 631 | 35 | 0,70 % | 256 | 0,064 % | 101 |
+| `full` (15 cas) | 1 592 647 | 103 | 0,52 % | 741 | 0,047 % | 471 |
+
+Les estimations de H-07 (7,6 comptes et 63 transactions par cas) deviennent : environ 7 comptes et 50 transactions de scénario par cas. Les deux taux restent sous 1 % de comptes et dans l'ordre de grandeur des jeux publics (0,05 à 0,12 %). Sans cas configuré, le flux est identique à `generate_transactions` (vérifié sur `light`). Temps : `light` environ 12 s, `full` environ 66 s.
+
+**Tests :** `pytest -q` : 78 tests réussis (19 existants + 59 nouveaux dans `tests/test_scenarios.py` et `tests/test_labels.py`), `ruff check .` réussit. Les tests couvrent la signature de chaque scénario (seuil, commission, retransmission, cycle fermé, flux des sociétés écran), les niveaux, les surcharges de paramètres et la validation, le placement par bloc, la séparation des labels et l'absence de label dans les messages `transactions`. `docker-compose.yml` et `.env` n'ont pas été modifiés (`.env.example` non plus).
+
+**Décisions à valider / questions ouvertes**
+
+- **Durée des cas (question ouverte 3, maintenant chiffrée).** Avec les durées du catalogue, 2 des 15 cas `full` sortent de leur bloc prévu et sont placés dans l'entraînement : fractionnement `medium` (17 jours, bloc validation de 16) et flux circulaires `high` (jusqu'à 30 jours, bloc test de 18). Aucune valeur n'a été modifiée en silence : le manifeste le signale (`placement_summary.cases_outside_assigned_block`). Avec `window_days: 10` (fractionnement) et `period_days: 10` (flux circulaires), les 15 cas tiennent dans leur bloc (testé). À trancher : raccourcir ces durées ou passer à 120 jours.
+- La marge de report aux jours ouvrés (3,5 jours) rend le placement prudent : un cas peut être jugé trop long alors que sa durée réelle tient.
+- Les labels ne sont **pas** chargés dans PostgreSQL : `sql/schema.sql` n'a pas les colonnes `case_id` et `sophistication` (C-11), et le contrat attend la validation de l'équipe. À faire à l'intégration : ajouter les colonnes, charger par `TRUNCATE` puis insertion, créer le rôle de scoring sans `SELECT` sur `labels`.
+- Les niveaux par défaut de `light` (tous `medium`) et les valeurs H-24 à H-29 sont mes choix ; à relire avec Mouad puis le Pr Chergui.
+- Non testé : Kafka, PostgreSQL et Docker réels (le producteur est simulé dans les tests). `psycopg`/`confluent-kafka` non installés ici.

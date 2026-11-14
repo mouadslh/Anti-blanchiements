@@ -110,7 +110,10 @@ def main() -> int:
     parser.add_argument("--report", action="store_true", help="Print a simulation statistics report")
     parser.add_argument("--profile", choices=("light", "full"), default="light", help="Simulation population profile")
     parser.add_argument("--seed", type=int, default=42, help="Deterministic random seed")
-    parser.add_argument("--output", type=Path, help="CSV output path (default: data/transactions/normal-<profile>-seed<seed>.csv)")
+    parser.add_argument("--output", type=Path, help="CSV output path (default: data/transactions/dataset-<profile>-seed<seed>.csv, or normal-... with --normal-only)")
+    parser.add_argument("--normal-only", action="store_true", help="Generate normal behaviour only: no AML scenario, no labels")
+    parser.add_argument("--scenario-config", type=Path, help="YAML overrides for the AML scenarios (see config/simulator.yaml)")
+    parser.add_argument("--labels-output", type=Path, help="Ground-truth labels CSV (default: data/labels/labels-<profile>-seed<seed>.csv)")
     parser.add_argument("--replay", action="store_true", help="Replay the generated CSV to Kafka")
     parser.add_argument("--store-raw", action="store_true", help="Idempotently store generated events in PostgreSQL")
     parser.add_argument("--rate", type=int, default=100, help="Kafka replay rate, 1 to 500 events/second")
@@ -132,6 +135,8 @@ def main() -> int:
             result = unittest.TextTestRunner(verbosity=2).run(suite)
             return 0 if result.wasSuccessful() else 1
         elif args.command == "simulate":
+            from aml.simulator.dataset import build_dataset, write_dataset
+            from aml.simulator.labels import scenario_report
             from aml.simulator.normal import (
                 generate_transactions,
                 publish_kafka,
@@ -140,12 +145,32 @@ def main() -> int:
                 summarize_csv,
                 write_csv,
             )
+            from aml.simulator.scenario_config import load_config_file
 
-            output = args.output or ROOT / "data" / "transactions" / f"normal-{args.profile}-seed{args.seed}.csv"
-            count = write_csv(generate_transactions(profile=args.profile, seed=args.seed), output)
-            print(f"{count} transaction(s) normales écrites dans {output}")
+            stem = f"{args.profile}-seed{args.seed}"
+            if args.normal_only:
+                output = args.output or ROOT / "data" / "transactions" / f"normal-{stem}.csv"
+                count = write_csv(generate_transactions(profile=args.profile, seed=args.seed), output)
+                print(f"{count} transaction(s) normales écrites dans {output}")
+                manifest = None
+            else:
+                output = args.output or ROOT / "data" / "transactions" / f"dataset-{stem}.csv"
+                labels_output = args.labels_output or ROOT / "data" / "labels" / f"labels-{stem}.csv"
+                manifest_output = labels_output.with_suffix(".manifest.json")
+                config = load_config_file(args.scenario_config) if args.scenario_config else None
+                dataset = build_dataset(args.profile, args.seed, config)
+                manifest = write_dataset(dataset, output, labels_output, manifest_output)
+                rates = manifest["rates"]
+                print(f"{rates['total_transactions']} transaction(s) écrites dans {output} "
+                      f"(dont {rates['labeled_transactions']} de scénario)")
+                print(f"Labels séparés du flux : {labels_output} ; manifeste : {manifest_output}")
+                print(f"Comptes étiquetés : {rates['labeled_accounts']} ({rates['account_rate']:.2%}) ; "
+                      f"transactions de scénario : {rates['transaction_rate']:.3%}")
             if args.report:
-                print(report_json(summarize_csv(output)))
+                report = summarize_csv(output)
+                if manifest is not None:
+                    report.update(scenario_report(manifest))
+                print(report_json(report))
             if args.replay:
                 bootstrap_servers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
                 sent = publish_kafka(output, rate=args.rate, bootstrap_servers=bootstrap_servers,
