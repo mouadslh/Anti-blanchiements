@@ -19,3 +19,11 @@
 - La spécification attribuée à Mounir n'est pas présente dans `origin/main` actuel; aucune affirmation de réconciliation avec ce document n'est faite ici. Le contrat reste une proposition tant qu'une revue croisée n'a pas eu lieu.
 - Le plan d'évaluation de phase 1 fixe une unité d'alerte compte/jour, alors que le message de score du prompt est transactionnel (`tx_id`). La granularité et l'agrégation des alertes restent une décision commune; la clé provisoire du DDL ne doit pas être interprétée comme un choix final.
 - Les documents de phase 1 signalent aussi des champs candidats absents du contrat maître (solde, bénéficiaire effectif, pays de destination). Aucun n'a été ajouté sans décision des deux étudiants.
+
+## Phase 3 — rôle du jeu externe demandé par l'encadrant
+
+- **Jeu principal :** transactions synthétiques générées localement par notre simulateur (comportement normal + cinq scénarios + labels séparés). C'est ce jeu qui alimente le flux Kafka et l'évaluation principale.
+- **Jeu externe retenu :** SAML-D, uniquement comme **benchmark et référence de calibration** pour comparer des ordres de grandeur et vérifier que les taux/statistiques du simulateur ne sont pas aberrants. Les schémas et données restent séparés; aucune ligne SAML-D n'est mélangée, rejouée dans Kafka ou utilisée comme label du jeu v1.
+- **Motif :** SAML-D documente 9 504 852 transactions et environ 0,1039 % de transactions suspectes; il apporte un point de comparaison public. Son échelle, ses typologies et ses conventions ne sont pas identiques à notre jeu et ne représentent pas spécifiquement des opérations bancaires marocaines.
+- **Licence rapportée dans `docs/typologies.md` :** CC BY-NC-SA 4.0. Citer les auteurs et respecter l'usage non commercial/partage à l'identique; ne pas versionner le fichier externe dans le dépôt. Confirmer les conditions depuis la fiche du jeu avant de télécharger ou redistribuer.
+- **Statut :** décision de travail pour le PFA, à faire confirmer explicitement par le Pr Chergui.

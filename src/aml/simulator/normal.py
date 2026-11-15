@@ -13,6 +13,7 @@ import itertools
 import json
 import math
 import random
+import statistics
 from collections import Counter
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
@@ -210,6 +211,8 @@ def summarize_csv(path: str | Path) -> dict[str, Any]:
     channels: Counter[str] = Counter()
     hours: Counter[int] = Counter()
     days: Counter[str] = Counter()
+    dates: Counter[str] = Counter()
+    amounts: dict[str, list[float]] = {}
     count = 0
     with Path(path).open(encoding="utf-8", newline="") as handle:
         for event in csv.DictReader(handle):
@@ -219,9 +222,23 @@ def summarize_csv(path: str | Path) -> dict[str, Any]:
             timestamp = datetime.fromisoformat(event["timestamp"])
             hours[timestamp.hour] += 1
             days[timestamp.strftime("%A")] += 1
+            dates[timestamp.date().isoformat()] += 1
+            amounts.setdefault(event["source_customer_type"], []).append(float(event["amount"]))
+    amount_distributions = {}
+    for profile, values in sorted(amounts.items()):
+        ordered = sorted(values)
+        p95_index = min(len(ordered) - 1, math.ceil(.95 * len(ordered)) - 1)
+        amount_distributions[profile] = {
+            "transactions": len(ordered), "min_mad": round(ordered[0], 2),
+            "median_mad": round(statistics.median(ordered), 2),
+            "mean_mad": round(statistics.fmean(ordered), 2),
+            "p95_mad": round(ordered[p95_index], 2), "max_mad": round(ordered[-1], 2),
+        }
     return {"transactions": count, "by_profile": dict(sorted(profiles.items())),
             "by_channel": dict(sorted(channels.items())), "by_hour_utc": dict(sorted(hours.items())),
-            "by_weekday": dict(sorted(days.items())), "scenario_counts": "non générés (tâche Mounir)",
+            "by_weekday": dict(sorted(days.items())), "by_date": dict(sorted(dates.items())),
+            "amounts_mad_by_profile": amount_distributions,
+            "scenario_counts": "non générés (tâche Mounir)",
             "labels": "aucun label dans le flux normal", "suspicious_rate": "non calculé avant intégration des scénarios"}
 
 
