@@ -76,7 +76,12 @@ def test_checkpoint_restart_reprocesses_no_rows(tmp_path):
 
     from pyspark.sql import SparkSession
     from pyspark.sql.types import StringType, StructField, StructType
-    from aml.streaming.feature_job import expand_account_events, parse_transactions, stateful_features
+
+    from aml.streaming.feature_job import (
+        expand_account_events,
+        parse_transactions,
+        stateful_features,
+    )
 
     os.environ.setdefault("SPARK_LOCAL_IP", "127.0.0.1")
     spark = (SparkSession.builder.master("local[2]").appName("checkpoint-restart-test")

@@ -235,3 +235,8 @@ Les estimations de H-07 (7,6 comptes et 63 transactions par cas) deviennent : en
 - **Débit/latence : non mesurés.** Le job journalise les lignes/s entrantes et traitées, la durée `addBatch`, le watermark et le nombre de lignes écartées par le watermark à chaque micro-batch. Consigner les valeurs réelles après exécution sur le stack Docker avant de valider le critère de performance; aucune valeur n'est inventée.
 - **Décisions à confirmer :** watermark 2 h; forme C-06 par `(compte, transaction, côté)` et coexistence avec le DDL historique; définition du délai entrant-sortant. Le sink Kafka est au moins une fois (doublons possibles après reprise); l'upsert PostgreSQL est idempotent et les consommateurs aval doivent dédupliquer avec la clé logique.
 - **Limite de branche :** le workspace courant est encore sur `task/phase3-dataset-v1`; mise à jour Git refusée par les permissions du dossier `.git`. Ces fichiers sont des changements locaux non poussés, à transférer vers une branche Phase 4 avant PR.
+
+### Correction CI — branche `task/phase4-spark-streaming`
+
+- Après publication de la branche Phase 4, le contrôle Ruff de la PR a signalé des variables inutilisées, un remplacement de fuseau horaire devenu inutile et un ordre d'import dans le test Spark. Corrections appliquées dans `feature_job.py`, `features.py` et `tests/test_streaming_features.py`.
+- Vérification locale après correction : `ruff check .` réussit; `pytest` : 82 réussis, 1 ignoré. Le test ignoré est le test de reprise Spark, car les extras `pyspark`, `pandas` et `pyarrow` ne sont pas installés dans l'environnement de validation. Le contrôle runtime Docker et la mesure de débit/latence restent à faire.

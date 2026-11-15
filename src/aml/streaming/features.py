@@ -60,7 +60,7 @@ def transaction_to_account_events(transaction: dict[str, Any]) -> list[AccountEv
     Cash operations are represented with the customer account as ``source`` in contract
     v1; cash deposits therefore increase inflow and withdrawals increase outflow.
     """
-    timestamp = datetime.fromisoformat(transaction["timestamp"].replace("Z", "+00:00"))
+    timestamp = datetime.fromisoformat(transaction["timestamp"])
     channel = transaction["channel"]
     source_id = transaction["source_account_id"]
     target_id = transaction["target_account_id"]

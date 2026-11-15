@@ -7,7 +7,6 @@ import logging
 import os
 import re
 import threading
-import time
 from collections.abc import Iterator
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -129,7 +128,7 @@ def ensure_features_table(config: dict[str, Any]) -> None:
 def parse_transactions(stream: Any, watermark_delay: str) -> Any:
     """Parse only the exact v1 transaction keys, deduplicate IDs, and set event-time watermark."""
     F, spark_types, _, _ = _spark_types()
-    DoubleType, MapType, StringType, StructField, StructType, TimestampType = spark_types
+    DoubleType, MapType, StringType, StructField, StructType, _ = spark_types
     schema = StructType(
         [
             StructField("tx_id", StringType(), True),
@@ -182,21 +181,7 @@ def parse_transactions(stream: Any, watermark_delay: str) -> Any:
 
 
 def expand_account_events(transactions: Any) -> Any:
-    F, spark_types, _, _ = _spark_types()
-    _, _, StringType, StructField, StructType, _ = spark_types
-    event_type = StructType(
-        [
-            StructField("account_id", StringType(), False),
-            StructField("tx_id", StringType(), False),
-            StructField("event_ts", transactions.schema["event_ts"].dataType, False),
-            StructField("side", StringType(), False),
-            StructField("amount", transactions.schema["amount"].dataType, False),
-            StructField("channel", StringType(), False),
-            StructField("counterparty", StringType(), False),
-            StructField("city", StringType(), False),
-            StructField("flow", StringType(), False),
-        ]
-    )
+    F, _, _, _ = _spark_types()
     source = F.struct(
         F.col("source_account_id").alias("account_id"),
         F.col("tx_id"), F.col("event_ts"), F.lit("source").alias("side"), F.col("amount"),
@@ -343,7 +328,6 @@ def write_feature_batch(batch: Any, batch_id: int, config: dict[str, Any]) -> No
     batch.foreachPartition(
         lambda rows: _write_postgres_partition(rows, dsn, table, batch_id)
     )
-    F, _, _, _ = _spark_types()
     kafka_records = batch.selectExpr(
         "CAST(account_id AS STRING) AS key",
         "to_json(named_struct('account_id', account_id, 'tx_id', tx_id, 'side', side, "
