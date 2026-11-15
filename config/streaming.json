@@ -1,0 +1,21 @@
+{
+  "bootstrap_servers": "kafka:29092",
+  "source_topic": "transactions",
+  "features_topic": "features",
+  "starting_offsets": "earliest",
+  "max_offsets_per_trigger": 1000,
+  "trigger_interval": "5 seconds",
+  "watermark_delay": "2 hours",
+  "reporting_threshold_mad": 100000,
+  "history_days": 30,
+  "min_history_events": 3,
+  "checkpoint_location": "/state/features-v1",
+  "postgres_table": "account_features_stream",
+  "postgres_host": "postgres",
+  "postgres_port": 5432,
+  "postgres_db": "aml",
+  "postgres_user": "aml",
+  "postgres_password": "aml_local_dev",
+  "spark_local_cores": 2,
+  "shuffle_partitions": 2
+}

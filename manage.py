@@ -106,7 +106,7 @@ def phase0_smoke() -> None:
 def main() -> int:
     load_env()
     parser = argparse.ArgumentParser(description="AML project command line")
-    parser.add_argument("command", choices=("up", "down", "simulate", "train", "evaluate", "test", "reset"))
+    parser.add_argument("command", choices=("up", "down", "simulate", "train", "evaluate", "test", "reset", "stream"))
     parser.add_argument("--report", action="store_true", help="Print a simulation statistics report")
     parser.add_argument("--report-output", type=Path, help="Also save the JSON report at this path")
     parser.add_argument("--profile", choices=("light", "full"), default="light", help="Simulation population profile")
@@ -131,6 +131,10 @@ def main() -> int:
             compose("down")
         elif args.command == "reset":
             compose("down", "-v")
+        elif args.command == "stream":
+            # The optional profile keeps the Spark worker out of the base stack.
+            compose("--profile", "streaming", "up", "-d", "--build", "spark")
+            print("Job Spark lancé. Logs : docker compose --profile streaming logs -f spark")
         elif args.command == "test":
             suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
             result = unittest.TextTestRunner(verbosity=2).run(suite)
