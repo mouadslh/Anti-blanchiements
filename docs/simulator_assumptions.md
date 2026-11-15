@@ -296,6 +296,19 @@ Ces écarts ont été relevés dans `docs/typologies.md` 8.2. Ils sont repris ic
 
 ---
 
+## 9 bis. Compléments de la Phase 3 (injection des scénarios)
+
+Paramètres ajoutés par le simulateur parce que le catalogue ne les fixait pas. Tous **[H]**, modifiables dans `config/simulator.yaml`.
+
+| N° | Hypothèse | Valeur par défaut |
+| --- | --- | --- |
+| H-24 | Comptes relais : fenêtre de réception des virements ; montant médian reçu (log-normal, sigma 0,5) | 3 jours ; 5 000 MAD |
+| H-25 | Flux circulaires : montant initial du cycle ; part d'activité normale mêlée (faible / moyen / élevé) ; délai entre étapes (1 / 2 / 3 jours) | 0,5 T ; 0 / 0,1 / 0,3 |
+| H-26 | Sociétés écran : durée du pic d'activité ; médiane des dépenses de façade ; façade (faible / moyen / élevé) | 10 jours ; 1 200 MAD ; 0 / 0,1 / 0,3 |
+| H-27 | Les sources de virements entrants (comptes relais, sociétés écran) sont de vrais clients non étiquetés, dédiés au cas ; les contreparties de salaire des sociétés écran aussi | voir `docs/journal.md` |
+| H-28 | Camouflage et dépenses de façade ne sont pas étiquetés au niveau transaction | oui |
+| H-29 | Les virements des flux circulaires et des sociétés écran ont lieu en jours ouvrés, 9 h - 17 h | oui |
+
 ## 10. Questions ouvertes
 
 1. **Validation par l'équipe** (Mouad et Mounir) de la résolution des volumes et des taux (section 7) avant report dans `MASTER_PROMPT_PFA_AML.md` et `Roadmap_PFA_Detection_Blanchiment.md`.

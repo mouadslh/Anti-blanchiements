@@ -86,6 +86,9 @@ def _population(count: int, seed: int) -> list[Customer]:
         home = _weighted_choice(rng, CITIES)
         options = [value for value in counterparties if value != account_id]
         network = rng.sample(options, min(PROFILES[profile]["network"], len(options)))
+        # Le canal « card » exige au moins un commerçant externe dans le réseau.
+        if not any(account.startswith("ext-") for account in network):
+            network[-1] = rng.choice(external_ids)
         customers.append(Customer(account_id, profile, home, tuple(network)))
     return customers
 
@@ -126,7 +129,7 @@ def _event_time(rng: random.Random, profile: str, channel: str) -> datetime:
     if profile == "company" and channel in {"transfer", "international_transfer"} and current.weekday() < 5:
         hour = rng.randrange(9, 17)
     else:
-        hour, hour_range = _weighted_choice(
+        hour_range = _weighted_choice(
             rng, (((0, 6), .02), ((6, 12), .28), ((12, 18), .38), ((18, 24), .32))
         )
         hour = rng.randrange(*hour_range)

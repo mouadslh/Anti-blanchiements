@@ -1,6 +1,6 @@
 # Simulateur de comportement normal — Phase 3 (Mouad)
 
-Ce composant génère la base de transactions normales nécessaire au pipeline AML. Il respecte la forme `transactions` du contrat v1 proposé et n'émet aucun label. Les scénarios de blanchiment, leurs labels et la génération finale commune restent à intégrer séparément par Mounir/l'équipe.
+Ce composant génère la base de transactions nécessaire au pipeline AML. Il respecte la forme `transactions` du contrat v1 proposé et n'émet aucun label dans le flux. Depuis l'injection des scénarios (Phase 3, Mounir), `simulate` mêle par défaut les cinq scénarios de blanchiment au flux normal et écrit les labels **à part** ; `--normal-only` reproduit le comportement précédent.
 
 Les paramètres par défaut viennent de `docs/simulator_assumptions.md` : profils `light` (5 000 clients) et `full` (20 000), 90 jours à partir du 15 janvier 2027, répartition des profils, canaux, montants log-normaux, réseau stable de contreparties, villes, horaires, semaine et saisonnalité. Ce sont des hypothèses de simulation, pas des statistiques observées. Le contrat v1 et ces hypothèses restent à valider ensemble.
 
@@ -43,3 +43,25 @@ python manage.py simulate --profile light --seed 42 --replay --store-raw
 ```
 
 Ces options utilisent les services déjà démarrés par l'équipe; elles ne modifient ni Docker Compose ni `.env`. Il n'y a pas de jitter d'arrivée configurable dans cette première version; les événements sont publiés dans l'ordre du temps événementiel.
+
+## Scénarios AML et labels (Phase 3, Mounir)
+
+`python manage.py simulate --profile light --seed 42 --report` produit trois fichiers :
+
+| Fichier | Contenu |
+| --- | --- |
+| `data/transactions/dataset-<profil>-seed<graine>.csv` | flux normal + scénarios, colonnes du contrat v1 uniquement (rejouable vers Kafka, `--store-raw`) |
+| `data/labels/labels-<profil>-seed<graine>.csv` | vérité terrain : `account_id, tx_id, scenario, role, start_ts, end_ts, case_id, sophistication` |
+| `data/labels/labels-<profil>-seed<graine>.manifest.json` | paramètres réalisés par cas, bloc et jour de placement, taux mesurés, configuration utilisée |
+
+Les labels ne sont jamais dans le CSV de transactions ni dans Kafka. Deux sortes de lignes : **compte-rôle** (`tx_id` vide, période d'activité du compte dans le cas) et **transaction** (`tx_id` renseigné, rattachée au compte du cas concerné : la source si c'est un compte du cas, sinon la cible). Le camouflage (activité d'allure normale mêlée au cas) n'est étiqueté qu'au niveau compte. Le taux de comptes se calcule sur les lignes compte-rôle (D-1) et la génération échoue s'il atteint 1 % (D-2).
+
+Paramètres : `config/simulator.yaml` liste tous les défauts (scénarios, niveaux `low`/`medium`/`high`, nombre de cas par profil). Pour changer une valeur, créer un fichier ne contenant que les surcharges (`pip install -e ".[dev]"` pour PyYAML) :
+
+```text
+python manage.py simulate --scenario-config mes_surcharges.yaml --labels-output data/labels/test.csv
+```
+
+Profil `light` : 1 cas par scénario au niveau `medium`, placé librement dans les jours 8 à 90. Profil `full` : 15 cas, un par scénario et par niveau, un cas par bloc (entraînement, validation, test) avec une permutation des niveaux tirée de la graine. Les fenêtres de silence du comportement normal (comptes relais récents, sociétés écran dormantes) suppriment des transactions normales de ces comptes : leur nombre figure dans le manifeste (`suppressed_normal_events`).
+
+Limite connue : avec les durées par défaut du catalogue, certains cas ne tiennent pas dans leur bloc prévu ; le manifeste le signale (`placement_summary`). Voir `docs/journal.md`, Phase 3.

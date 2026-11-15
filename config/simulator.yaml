@@ -1,0 +1,168 @@
+# Paramètres des scénarios AML injectés par le simulateur (docs/typologies.md, sections 4 et 5).
+#
+# Ce fichier reprend exactement les valeurs par défaut du code
+# (src/aml/simulator/scenario_config.py, vérifié par tests/test_scenarios.py). Pour changer un
+# paramètre, copier ce fichier, ne garder que les valeurs à modifier, puis :
+#   python manage.py simulate --scenario-config mon_fichier.yaml
+# Les valeurs sont fusionnées avec les défauts, sauf `cases` qui est remplacé en entier.
+#
+# TOUTES les valeurs sont des hypothèses de simulation [H], pas des faits observés.
+# Une paire [min, max] est tirée au hasard une fois par cas (avec la graine), sauf les clés
+# `*_range`, qui restent des intervalles utilisés événement par événement.
+# Les paramètres marqués « nouveau » ne figurent pas dans le catalogue et ont été ajoutés
+# par le simulateur (voir docs/journal.md, Phase 3).
+
+# H-01 : déclencheur que le fraudeur simulé cherche à éviter. Hypothèse, jamais une obligation
+# légale marocaine (docs/typologies.md, 2.2).
+reporting_threshold: 100000
+
+# D-2 : la génération échoue si la part de comptes étiquetés atteint cette limite.
+max_account_rate: 0.01
+
+placement:
+  first_case_day: 8          # jours 1 à 7 : échauffement, aucun cas
+  blocks:                    # docs/evaluation_plan.md, 2.2 (jours 1 à 90)
+    train: [8, 56]
+    validation: [57, 72]
+    test: [73, 90]
+
+# Nombre de cas par scénario et par niveau de sophistication (low, medium, high).
+profiles:
+  light:                     # D-3 : 1 cas par scénario, niveau medium [H]
+    block_assignment: any
+    cases:
+      structuring: {medium: 1}
+      layering: {medium: 1}
+      mule: {medium: 1}
+      round_tripping: {medium: 1}
+      shell_company: {medium: 1}
+  full:                      # D-4 : 1 cas par scénario x niveau, un cas par bloc (plan 2.5)
+    block_assignment: per_block
+    cases:
+      structuring: {low: 1, medium: 1, high: 1}
+      layering: {low: 1, medium: 1, high: 1}
+      mule: {low: 1, medium: 1, high: 1}
+      round_tripping: {low: 1, medium: 1, high: 1}
+      shell_company: {low: 1, medium: 1, high: 1}
+
+scenarios:
+  structuring:               # 4.1 fractionnement
+    base:
+      n_accounts_in_group: 2
+      deposits_per_account: 10
+      amount_fraction_range: [0.75, 0.99]   # dépôt = T x u, u uniforme dans l'intervalle
+      window_days: 14
+      n_cities: 2
+      consolidation_delay_days: 3
+      normal_mix_ratio: 0.3
+    levels:
+      low:
+        n_accounts_in_group: 1
+        amount_fraction_range: [0.90, 0.99]
+        n_cities: 1
+        normal_mix_ratio: 0.0
+      medium:
+        n_accounts_in_group: [2, 3]
+        amount_fraction_range: [0.75, 0.99]
+        n_cities: 2
+        normal_mix_ratio: 0.3
+      high:
+        n_accounts_in_group: [3, 5]
+        amount_fraction_range: [0.50, 0.99]
+        n_cities: [2, 4]
+        normal_mix_ratio: 0.6
+
+  layering:                  # 4.2 empilement
+    base:
+      chain_length: 5
+      hop_delay_minutes_range: [30, 360]
+      fee_rate_per_hop: 0.01
+      initial_amount_multiple: 3
+      n_parallel_branches: 2
+      international_exit_prob: 0.2
+    levels:
+      low:
+        hop_delay_minutes_range: [5, 60]
+        n_parallel_branches: 1
+      medium:
+        hop_delay_minutes_range: [30, 360]
+        n_parallel_branches: 2
+      high:
+        hop_delay_minutes_range: [60, 2880]
+        n_parallel_branches: 3
+
+  mule:                      # 4.3 comptes relais
+    base:
+      n_mules: 8
+      n_inbound_sources: 12
+      forward_ratio: 0.90
+      forward_delay_hours_range: [2, 24]
+      n_destinations: 2
+      cash_out_share: 0.3
+      account_age_days: 60
+      normal_mix_ratio: 0.4
+      inbound_window_days: 3       # nouveau
+      inbound_amount_median: 5000  # nouveau (MAD, loi log-normale, sigma 0,5)
+    levels:
+      low:
+        forward_delay_hours_range: [0.5, 6]
+        normal_mix_ratio: 0.0
+      medium:
+        forward_delay_hours_range: [2, 24]
+        normal_mix_ratio: 0.4
+      high:
+        forward_delay_hours_range: [6, 72]
+        normal_mix_ratio: 0.7
+
+  round_tripping:            # 4.4 flux circulaires
+    base:
+      cycle_length: 4
+      n_companies_in_loop: 3
+      loss_per_loop: 0.02
+      n_repeats: 2
+      period_days: 30                 # durée maximale : les délais sont réduits au besoin
+      round_amount_share: 0.4
+      loop_delay_days: 2
+      initial_amount_multiple: 0.5    # nouveau (multiple de T)
+      normal_mix_ratio: 0.1           # nouveau (contreparties réelles mêlées)
+    levels:
+      low:
+        cycle_length: 3
+        round_amount_share: 0.8
+        loop_delay_days: 1
+        normal_mix_ratio: 0.0
+      medium:
+        cycle_length: [4, 5]
+        round_amount_share: 0.4
+        loop_delay_days: 2
+        normal_mix_ratio: 0.1
+      high:
+        cycle_length: [5, 6]
+        round_amount_share: 0.1
+        loop_delay_days: 3
+        normal_mix_ratio: 0.3
+
+  shell_company:             # 4.5 sociétés écran
+    base:
+      n_shells: 4
+      inflow_multiple: 10
+      n_distinct_counterparties: 4
+      payroll_like_outflow_share: 0.05
+      international_share: 0.3
+      dormancy_days: 30
+      facade_activity_ratio: 0.1
+      active_days: 10               # nouveau (durée du pic d'activité)
+      facade_amount_median: 1200    # nouveau (MAD)
+    levels:
+      low:
+        n_distinct_counterparties: [2, 3]
+        payroll_like_outflow_share: 0.0
+        facade_activity_ratio: 0.0
+      medium:
+        n_distinct_counterparties: [4, 6]
+        payroll_like_outflow_share: 0.05
+        facade_activity_ratio: 0.1
+      high:
+        n_distinct_counterparties: [6, 10]
+        payroll_like_outflow_share: 0.15
+        facade_activity_ratio: 0.3
