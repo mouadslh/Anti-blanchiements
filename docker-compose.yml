@@ -8,10 +8,11 @@ services:
       KAFKA_NODE_ID: 1
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -67,6 +68,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+
+  spark:
+    profiles: ["streaming"]
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    working_dir: /app
+    environment:
+      AML_STREAMING_CONFIG: /app/config/streaming.json
+      PYSPARK_PYTHON: python3
+      POSTGRES_DB: ${POSTGRES_DB:-aml}
+      POSTGRES_USER: ${POSTGRES_USER:-aml}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aml_local_dev}
+    volumes:
+      - ./checkpoints:/state
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    mem_limit: 2g
+    command: ["spark-submit", "--master", "local[2]", "--conf", "spark.sql.shuffle.partitions=2", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.8", "/app/src/aml/streaming/feature_job.py"]
 
 volumes:
   postgres_data:
