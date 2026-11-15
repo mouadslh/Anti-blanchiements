@@ -18,7 +18,7 @@ Le fichier est écrit dans `data/transactions/normal-light-seed42.csv` (dossier 
 python manage.py simulate --profile full --seed 7 --output data/transactions/full-seed7.csv --report
 ```
 
-Le rapport présente les volumes par profil, canal, heure UTC et jour de semaine. Les nombres de scénarios et le taux suspect sont indiqués comme indisponibles tant que l'injecteur de Mounir et les labels séparés ne sont pas intégrés; le simulateur ne fabrique pas de métriques AML.
+Le rapport présente les volumes par profil et canal, l'activité par heure UTC et jour de semaine, les comptes de scénarios, les nombres de labels, et les taux de comptes/transactions suspects. `--report-output reports/dataset_v1_light_seed42.json` enregistre également le rapport JSON.
 
 Une graine donnée produit les mêmes clients, comptes et événements ordonnés dans le même fichier. Les identifiants de transactions sont attribués après tri chronologique (`tx-` et huit chiffres); les comptes utilisent `acct-`/`ext-`. Une nouvelle graine peut réutiliser les mêmes `tx_id`, donc les générations de graines différentes doivent être isolées dans la base, comme prévu par la spécification.
 
@@ -65,3 +65,9 @@ python manage.py simulate --scenario-config mes_surcharges.yaml --labels-output 
 Profil `light` : 1 cas par scénario au niveau `medium`, placé librement dans les jours 8 à 90. Profil `full` : 15 cas, un par scénario et par niveau, un cas par bloc (entraînement, validation, test) avec une permutation des niveaux tirée de la graine. Les fenêtres de silence du comportement normal (comptes relais récents, sociétés écran dormantes) suppriment des transactions normales de ces comptes : leur nombre figure dans le manifeste (`suppressed_normal_events`).
 
 Limite connue : avec les durées par défaut du catalogue, certains cas ne tiennent pas dans leur bloc prévu ; le manifeste le signale (`placement_summary`). Voir `docs/journal.md`, Phase 3.
+
+## Jeu externe demandé par l'encadrant
+
+Le jeu local synthétique issu du simulateur reste la **source principale** : il est reproductible, respecte notre contrat et permet de contrôler le contexte marocain simulé, les cinq scénarios et les labels. Le jeu public **SAML-D** est retenu comme **benchmark de comparaison et référence de calibration** pour confronter les ordres de grandeur (taux suspect, activité et montants lorsque les champs peuvent être rapprochés). Il n'est pas fusionné au jeu v1, n'alimente pas Kafka et ne fournit pas les labels du jeu local. Sa taille publiée (9 504 852 transactions) et son schéma diffèrent du nôtre; aucune transposition directe des résultats n'est revendiquée.
+
+Référence : Oztas et al., IEEE ICEBE 2023, [page Kaggle SAML-D](https://www.kaggle.com/datasets/berkanoztas/synthetic-transaction-monitoring-dataset-aml) et [notice de l'auteur](https://github.com/BOztasUK/Anti_Money_Laundering_Transaction_Data_SAML-D). La licence annoncée dans la documentation du projet est **CC BY-NC-SA 4.0** : attribution, usage non commercial et partage sous la même licence. Ne pas ajouter les fichiers publics au dépôt; vérifier à nouveau la notice et les conditions Kaggle avant tout téléchargement ou redistribution. La validation explicite de ce rôle par le Pr Chergui reste à consigner.

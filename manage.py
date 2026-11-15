@@ -108,6 +108,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="AML project command line")
     parser.add_argument("command", choices=("up", "down", "simulate", "train", "evaluate", "test", "reset"))
     parser.add_argument("--report", action="store_true", help="Print a simulation statistics report")
+    parser.add_argument("--report-output", type=Path, help="Also save the JSON report at this path")
     parser.add_argument("--profile", choices=("light", "full"), default="light", help="Simulation population profile")
     parser.add_argument("--seed", type=int, default=42, help="Deterministic random seed")
     parser.add_argument("--output", type=Path, help="CSV output path (default: data/transactions/dataset-<profile>-seed<seed>.csv, or normal-... with --normal-only)")
@@ -170,7 +171,23 @@ def main() -> int:
                 report = summarize_csv(output)
                 if manifest is not None:
                     report.update(scenario_report(manifest))
-                print(report_json(report))
+                report["external_dataset"] = {
+                    "name": "SAML-D",
+                    "role": "benchmark_and_calibration_reference_only",
+                    "primary_dataset": False,
+                    "downloaded_or_included": False,
+                    "used_to_generate_or_replay": False,
+                    "note": (
+                        "The v1 dataset is locally simulated in MAD with Moroccan city names; "
+                        "SAML-D is a comparison reference only."
+                    ),
+                }
+                rendered_report = report_json(report)
+                print(rendered_report)
+                if args.report_output:
+                    args.report_output.parent.mkdir(parents=True, exist_ok=True)
+                    args.report_output.write_text(rendered_report + "\n", encoding="utf-8")
+                    print(f"Rapport JSON enregistré : {args.report_output}")
             if args.replay:
                 bootstrap_servers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
                 sent = publish_kafka(output, rate=args.rate, bootstrap_servers=bootstrap_servers,
