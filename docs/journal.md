@@ -240,3 +240,47 @@ Les estimations de H-07 (7,6 comptes et 63 transactions par cas) deviennent : en
 
 - Après publication de la branche Phase 4, le contrôle Ruff de la PR a signalé des variables inutilisées, un remplacement de fuseau horaire devenu inutile et un ordre d'import dans le test Spark. Corrections appliquées dans `feature_job.py`, `features.py` et `tests/test_streaming_features.py`.
 - Vérification locale après correction : `ruff check .` réussit; `pytest` : 82 réussis, 1 ignoré. Le test ignoré est le test de reprise Spark, car les extras `pyspark`, `pandas` et `pyarrow` ne sont pas installés dans l'environnement de validation. Le contrôle runtime Docker et la mesure de débit/latence restent à faire.
+
+## 2026-11-15 — Phase 4 : règles de base et modèles sans fuite temporelle (Mounir)
+
+**Phase :** Phase 4 (modèles, côté Mounir). Tickets Jira « Implémenter la baseline de détection par règles » et « Entraîner Isolation Forest et XGBoost sans fuite temporelle ». Détail : `docs/models_baseline.md`.
+
+**Fichiers créés ou modifiés**
+
+- Créés : `config/scoring.yaml`, `src/aml/models/` (`config.py`, `rules.py`, `features.py`, `splits.py`, `labels.py`, `isolation_forest.py`, `xgboost_layer.py`, `metrics.py`, `leakage.py`, `pipeline.py`), `tests/test_rules.py`, `test_models_features.py`, `test_leakage.py`, `test_splits.py`, `test_models_training.py`, `tests/synthetic_data.py`, `docs/models_baseline.md`, `reports/phase4_baseline_full-seed{1,2,3}.json`, `reports/phase4_baseline_light-seed42.json`.
+- Modifiés : `manage.py` (commande `train`), `pyproject.toml` (extra `models`), `.github/workflows/ci.yml` (installe `.[dev,models]`), ce journal.
+- **`docker-compose.yml`, `.env` et `.env.example` non modifiés** (comparés à l'archive d'origine).
+
+**Commandes exécutées**
+
+```text
+python manage.py simulate --profile light --seed 42
+python manage.py simulate --profile full --seed 1   # puis 2, 3
+python manage.py train --profile full --seed 1      # puis 2, 3 ; light/42 en contrôle
+pytest -q            -> 137 réussis, 1 ignoré (test Spark d'intégration) ; ruff check . -> OK
+```
+
+**Résultats (réels, `full`, test, indicatifs)**
+
+| Couche | PR-AUC moyenne | precision@50 | recall@50 | Cas détectés (g1, g2, g3) |
+| --- | --- | --- | --- | --- |
+| Règles | 0,0066 | 0,025 | 0,19 | 4/4, 5/5, 4/4 |
+| Isolation Forest | 0,0123 | 0,021 | 0,15 | 3/4, 2/5, 0/4 |
+| XGBoost | 0,104 | 0,055 | 0,40 | 2/4, 3/5, 0/4 |
+
+Prévalence ≈ 0,05 % ; plafond de la precision@50 ≈ 0,15. Seuils choisis sur la validation (coût c_FN/c_FP = 200, au plus 50 alertes/jour en moyenne), puis gelés. XGBoost : `scale_pos_weight` ≈ 1 107 à 1 306, arrêt précoce sur la validation (5 à 26 arbres retenus).
+
+**Vérifications**
+
+- Parité avec `aml.streaming.features` : 0 écart (contrôle sur 1 659 événements du jeu `light` puis test automatisé sur données synthétiques).
+- Test d'invariance au futur : réussi pour les variables du projet, échoue sur deux témoins fautifs.
+- Reproductibilité : deux exécutions de `train --profile full --seed 1` donnent un rapport identique (hors durées). Ce second passage sur le test n'a modifié aucun choix.
+- Durée d'une exécution `full` : environ 1 minute (1 cœur).
+
+**Écarts et risques**
+
+- Python 3.12 dans cet environnement (le projet exige 3.11) ; à revalider sur 3.11 et en CI.
+- Deux variables hors contrat v1 (`tx_count_7d_to_30d`, `international_share_24h`) : à valider avec Mouad avant tout branchement Spark ; sans elles R-DORM-01 et R-CHAN-01 ne se déclenchent pas.
+- Seuils des règles non optimisés ; XGBoost sur-apprend vite ; seuil trop strict pour la graine 3. Résultats non concluants pour comparer les modèles (4 à 5 cas de test).
+- Non fait : branchement des règles/modèles au flux Kafka, option B d'entraînement, exécution des graines 4 et 5.
+- Le profil `light` donne des métriques sans valeur (validation sans cas) ; contrôle fonctionnel seulement.

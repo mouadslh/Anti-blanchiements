@@ -36,3 +36,10 @@
 - Le checkpoint est monté dans `./checkpoints` et le service Spark est derrière le profil Compose `streaming`; lancement via `python manage.py stream`. Le broker garde le listener hôte `localhost:9092` et ajoute `kafka:29092` pour les conteneurs. La limite mémoire Spark est 2 Gio et le master `local[2]`. Aucun changement `.env` n'est requis; le mot de passe PostgreSQL existant est transmis par Compose.
 - Kafka Structured Streaming garantit au mieux une écriture « au moins une fois » vers Kafka : un rejeu peut dupliquer des messages après panne. PostgreSQL est protégé par upsert sur la clé logique; les consommateurs Kafka doivent dédupliquer par `(account_id, tx_id, side)`. Ne pas présenter le pipeline complet comme « exactly once ».
 - Le délai watermark de 2 h reste provisoire (Q-02 non tranchée). Les événements expirés au-delà du watermark sont exclus des variables et doivent être surveillés via le journal de progression/les métriques de données tardives.
+
+## Phase 4 — règles et modèles de base (proposition, Mounir)
+
+- Score de règle : 0 ou 0,5 à 1,0 selon le dépassement du seuil, maximum sur les règles ; alternative écartée : score binaire (trop d'égalités pour le classement top-k).
+- Unité de calcul par événement, alerte par (compte, jour) au maximum du jour ; entraînement XGBoost sur tous les événements de l'entraînement avec `scale_pos_weight` automatique ; alternative non essayée : sous-échantillonnage des négatifs.
+- Labels d'entraînement censurés au dernier jour d'entraînement (L-5) ; seuil choisi sur la validation seulement (L-7).
+- Deux variables d'extension hors contrat v1 pour les règles ; à valider avec Mouad.
