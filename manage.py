@@ -111,7 +111,7 @@ def main() -> int:
     parser.add_argument("--report-output", type=Path, help="Also save the JSON report at this path")
     parser.add_argument("--profile", choices=("light", "full"), default="light", help="Simulation population profile")
     parser.add_argument("--seed", type=int, default=42, help="Deterministic random seed")
-    parser.add_argument("--output", type=Path, help="CSV output path (default: data/transactions/dataset-<profile>-seed<seed>.csv, or normal-... with --normal-only)")
+    parser.add_argument("--output", type=Path, help="CSV path: output of simulate, input transactions of train (default: data/transactions/dataset-<profile>-seed<seed>.csv, or normal-... with --normal-only)")
     parser.add_argument("--normal-only", action="store_true", help="Generate normal behaviour only: no AML scenario, no labels")
     parser.add_argument("--scenario-config", type=Path, help="YAML overrides for the AML scenarios (see config/simulator.yaml)")
     parser.add_argument("--labels-output", type=Path, help="Ground-truth labels CSV (default: data/labels/labels-<profile>-seed<seed>.csv)")
@@ -139,6 +139,33 @@ def main() -> int:
             suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
             result = unittest.TextTestRunner(verbosity=2).run(suite)
             return 0 if result.wasSuccessful() else 1
+        elif args.command == "train":
+            # Offline baseline: rules, Isolation Forest, XGBoost (needs `pip install -e ".[models]"`).
+            from aml.models.pipeline import run_baseline, write_report
+
+            stem = f"{args.profile}-seed{args.seed}"
+            transactions_path = args.output or ROOT / "data" / "transactions" / f"dataset-{stem}.csv"
+            labels_path = args.labels_output or ROOT / "data" / "labels" / f"labels-{stem}.csv"
+            for required in (transactions_path, labels_path):
+                if not Path(required).exists():
+                    raise ValueError(
+                        f"{required} not found: run `python manage.py simulate --profile "
+                        f"{args.profile} --seed {args.seed}` first"
+                    )
+            report = run_baseline(
+                transactions_path, labels_path, seed=args.seed, profile=args.profile,
+                artifacts_dir=ROOT / "artifacts" / "models" / stem,
+            )
+            report_path = args.report_output or ROOT / "reports" / f"phase4_baseline_{stem}.json"
+            write_report(report, report_path)
+            print(f"Rapport enregistré : {report_path}")
+            for layer, content in report["layers"].items():
+                test = content["test"]
+                print(
+                    f"{layer:17s} PR-AUC test={test['ranking']['pr_auc']} "
+                    f"cas détectés={test['operating_point']['cases_detected']}/"
+                    f"{test['operating_point']['cases']}"
+                )
         elif args.command == "simulate":
             from aml.simulator.dataset import build_dataset, write_dataset
             from aml.simulator.labels import scenario_report
