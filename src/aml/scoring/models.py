@@ -17,7 +17,7 @@ import yaml
 from aml.scoring.dataset import FEATURE_NAMES, build_account_days, temporal_masks
 
 
-def load_config(path: str | Path = "config/scoring.yaml") -> dict[str, Any]:
+def load_config(path: str | Path = "config/scoring_baselines.yaml") -> dict[str, Any]:
     config = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     config["artifact_dir"] = os.environ.get("AML_MODEL_ARTIFACT_DIR", config["artifact_dir"])
     streaming = config["streaming"]
@@ -620,7 +620,7 @@ def evaluate_all(config: dict[str, Any]) -> dict[str, Any]:
         test_rows = [rows[index] for index in test_ids]
         bundle_path = Path(config["artifact_dir"]) / f"aml_seed_{seed}.joblib"
         if not bundle_path.exists():
-            raise FileNotFoundError(f"Modèle manquant {bundle_path}; exécuter `manage.py train` d'abord")
+            raise FileNotFoundError(f"Modèle manquant {bundle_path}; exécuter `manage.py train-scoring` d'abord")
         bundle = joblib.load(bundle_path)
         scores_by_model = _score_bundle(test_rows, bundle)
         seed_result: dict[str, Any] = {"seed": seed, "test_rows": len(test_rows), "models": {}}

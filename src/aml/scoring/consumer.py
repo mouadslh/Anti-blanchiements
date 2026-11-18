@@ -61,13 +61,17 @@ def run_consumer(config: dict[str, Any] | None = None) -> None:
     except ImportError as exc:
         raise RuntimeError("Installez les extras `streaming` et `ml` pour lancer le scorer.") from exc
 
-    config = config or load_config(os.environ.get("AML_SCORING_CONFIG", "config/scoring.yaml"))
+    config = config or load_config(
+        os.environ.get("AML_SCORING_CONFIG", "config/scoring_baselines.yaml")
+    )
     streaming = config["streaming"]
     model_name = streaming["operating_model"]
     seed = int(streaming["model_seed"])
     bundle_path = Path(config["artifact_dir"]) / f"aml_seed_{seed}.joblib"
     if not bundle_path.exists():
-        raise FileNotFoundError(f"Modèle absent: {bundle_path}; lancer `python manage.py train` d'abord")
+        raise FileNotFoundError(
+            f"Modèle absent: {bundle_path}; lancer `python manage.py train-scoring` d'abord"
+        )
     bundle = joblib.load(bundle_path)
     consumer = Consumer(
         {

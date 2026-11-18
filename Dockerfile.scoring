@@ -10,5 +10,6 @@ COPY src ./src
 RUN pip install --no-cache-dir '.[ml,scoring]'
 
 COPY config/scoring.yaml ./config/scoring.yaml
+COPY config/scoring_baselines.yaml ./config/scoring_baselines.yaml
 COPY config/scoring_demo.yaml ./config/scoring_demo.yaml
 CMD ["python", "-m", "aml.scoring.consumer"]

@@ -1,0 +1,1194 @@
+{
+  "data": {
+    "account_events_scored": 1975463,
+    "blocks": {
+      "test": {
+        "days": [
+          73,
+          90
+        ],
+        "events": 431333,
+        "positive_events": 519
+      },
+      "train": {
+        "days": [
+          8,
+          56
+        ],
+        "events": 1162255,
+        "positive_events": 1049
+      },
+      "validation": {
+        "days": [
+          57,
+          72
+        ],
+        "events": 381875,
+        "positive_events": 609
+      }
+    },
+    "cases": 15,
+    "labelled_accounts": 100,
+    "transactions": 1605363
+  },
+  "features": [
+    "tx_count_1h",
+    "tx_count_24h",
+    "tx_count_7d",
+    "total_amount_1h_mad",
+    "total_amount_24h_mad",
+    "total_amount_7d_mad",
+    "distinct_counterparties_1h",
+    "distinct_counterparties_24h",
+    "distinct_counterparties_7d",
+    "amount_to_avg_ratio",
+    "near_threshold_share_24h",
+    "near_threshold_share_7d",
+    "cash_share_24h",
+    "cash_share_7d",
+    "inflow_outflow_ratio_24h",
+    "avg_in_to_out_delay_s_24h",
+    "distinct_cities_24h",
+    "tx_count_7d_to_30d",
+    "international_share_24h",
+    "current_amount_mad",
+    "current_flow_in"
+  ],
+  "imbalance": {
+    "isolation_forest": "no label used; fitted on the whole training block",
+    "xgboost": {
+      "best_iteration": 14,
+      "early_stopping_on_validation": true,
+      "n_trees": 45,
+      "scale_pos_weight": 1106.9647283126787,
+      "train_positive_rows": 1049,
+      "train_rows": 1162255
+    }
+  },
+  "layers": {
+    "isolation_forest": {
+      "cost_sensitivity_validation": {
+        "10": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 40.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "100": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 400.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "1000": {
+          "alerts": 738,
+          "alerts_per_day": 46.125,
+          "cases": 4,
+          "cases_detected": 2,
+          "cases_missed": 2,
+          "cost": 2736.0,
+          "false_alerts": 736,
+          "precision": 0.0027100271002710027,
+          "recall_units": 0.01834862385321101,
+          "threshold": 0.997609428272921,
+          "true_alerts": 2
+        },
+        "200": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 800.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "50": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 200.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "500": {
+          "alerts": 738,
+          "alerts_per_day": 46.125,
+          "cases": 4,
+          "cases_detected": 2,
+          "cases_missed": 2,
+          "cost": 1736.0,
+          "false_alerts": 736,
+          "precision": 0.0027100271002710027,
+          "recall_units": 0.01834862385321101,
+          "threshold": 0.997609428272921,
+          "true_alerts": 2
+        }
+      },
+      "test": {
+        "cases": [
+          {
+            "best_score": 0.999875,
+            "case_id": "case-003",
+            "detected": false,
+            "scenario": "structuring",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 0.999543,
+            "case_id": "case-006",
+            "detected": false,
+            "scenario": "layering",
+            "sophistication": "low"
+          },
+          {
+            "best_score": 0.999947,
+            "case_id": "case-009",
+            "detected": false,
+            "scenario": "mule",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 0.999255,
+            "case_id": "case-015",
+            "detected": false,
+            "scenario": "shell_company",
+            "sophistication": "medium"
+          }
+        ],
+        "detection": {
+          "scenario": {
+            "layering": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "mule": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "shell_company": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "structuring": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            }
+          },
+          "sophistication": {
+            "low": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "medium": {
+              "cases": 3,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.5615
+              ]
+            }
+          }
+        },
+        "operating_point": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 800.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "ranking": {
+          "positive_units": 104,
+          "pr_auc": 0.013844564664009152,
+          "prevalence": 0.0004492984032625976,
+          "roc_auc": 0.9343551182531724,
+          "units": 231472
+        },
+        "top_k": {
+          "days": 18,
+          "days_with_positive": 17,
+          "k": 50,
+          "mean_daily_precision_at_k": 0.018888888888888886,
+          "precision_at_k": 0.01888888888888889,
+          "precision_at_k_normalised": 0.16346153846153846,
+          "precision_ceiling": 0.11555555555555555,
+          "recall_at_k": 0.16346153846153846
+        }
+      },
+      "threshold_chosen_on_validation": {
+        "alerts": 0,
+        "alerts_per_day": 0.0,
+        "cases": 4,
+        "cases_detected": 0,
+        "cases_missed": 4,
+        "cost": 800.0,
+        "false_alerts": 0,
+        "precision": null,
+        "recall_units": 0.0,
+        "threshold": Infinity,
+        "true_alerts": 0
+      },
+      "validation": {
+        "cases": [
+          {
+            "best_score": 0.999104,
+            "case_id": "case-005",
+            "detected": false,
+            "scenario": "layering",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 0.997609,
+            "case_id": "case-008",
+            "detected": false,
+            "scenario": "mule",
+            "sophistication": "high"
+          },
+          {
+            "best_score": 0.975945,
+            "case_id": "case-011",
+            "detected": false,
+            "scenario": "round_tripping",
+            "sophistication": "low"
+          },
+          {
+            "best_score": 0.997274,
+            "case_id": "case-014",
+            "detected": false,
+            "scenario": "shell_company",
+            "sophistication": "low"
+          }
+        ],
+        "detection": {
+          "scenario": {
+            "layering": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "mule": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "round_tripping": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "shell_company": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            }
+          },
+          "sophistication": {
+            "high": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "low": {
+              "cases": 2,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.6576
+              ]
+            },
+            "medium": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            }
+          }
+        },
+        "operating_point": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 800.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "ranking": {
+          "positive_units": 109,
+          "pr_auc": 0.005227291639307534,
+          "prevalence": 0.000531606182238501,
+          "roc_auc": 0.8911742967054761,
+          "units": 205039
+        },
+        "top_k": {
+          "days": 16,
+          "days_with_positive": 11,
+          "k": 50,
+          "mean_daily_precision_at_k": 0.0075,
+          "precision_at_k": 0.0075,
+          "precision_at_k_normalised": 0.055045871559633024,
+          "precision_ceiling": 0.13625,
+          "recall_at_k": 0.05504587155963303
+        }
+      }
+    },
+    "rules": {
+      "cost_sensitivity_validation": {
+        "10": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 40.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "100": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 400.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "1000": {
+          "alerts": 635,
+          "alerts_per_day": 39.6875,
+          "cases": 4,
+          "cases_detected": 4,
+          "cases_missed": 0,
+          "cost": 622.0,
+          "false_alerts": 622,
+          "precision": 0.02047244094488189,
+          "recall_units": 0.11926605504587157,
+          "threshold": 0.866718027734977,
+          "true_alerts": 13
+        },
+        "200": {
+          "alerts": 635,
+          "alerts_per_day": 39.6875,
+          "cases": 4,
+          "cases_detected": 4,
+          "cases_missed": 0,
+          "cost": 622.0,
+          "false_alerts": 622,
+          "precision": 0.02047244094488189,
+          "recall_units": 0.11926605504587157,
+          "threshold": 0.866718027734977,
+          "true_alerts": 13
+        },
+        "50": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 200.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": Infinity,
+          "true_alerts": 0
+        },
+        "500": {
+          "alerts": 635,
+          "alerts_per_day": 39.6875,
+          "cases": 4,
+          "cases_detected": 4,
+          "cases_missed": 0,
+          "cost": 622.0,
+          "false_alerts": 622,
+          "precision": 0.02047244094488189,
+          "recall_units": 0.11926605504587157,
+          "threshold": 0.866718027734977,
+          "true_alerts": 13
+        }
+      },
+      "test": {
+        "cases": [
+          {
+            "best_score": 1.0,
+            "case_id": "case-003",
+            "detected": true,
+            "scenario": "structuring",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 1.0,
+            "case_id": "case-006",
+            "detected": true,
+            "scenario": "layering",
+            "sophistication": "low"
+          },
+          {
+            "best_score": 1.0,
+            "case_id": "case-009",
+            "detected": true,
+            "scenario": "mule",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 1.0,
+            "case_id": "case-015",
+            "detected": true,
+            "scenario": "shell_company",
+            "sophistication": "medium"
+          }
+        ],
+        "detection": {
+          "scenario": {
+            "layering": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "mule": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "shell_company": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "structuring": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            }
+          },
+          "sophistication": {
+            "low": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "medium": {
+              "cases": 3,
+              "detected": 3,
+              "recall": 1.0,
+              "wilson_95": [
+                0.4385,
+                1.0
+              ]
+            }
+          }
+        },
+        "operating_point": {
+          "alerts": 759,
+          "alerts_per_day": 42.166666666666664,
+          "cases": 4,
+          "cases_detected": 4,
+          "cases_missed": 0,
+          "cost": 736.0,
+          "false_alerts": 736,
+          "precision": 0.030303030303030304,
+          "recall_units": 0.22115384615384615,
+          "threshold": 0.866718027734977,
+          "true_alerts": 23
+        },
+        "ranking": {
+          "positive_units": 104,
+          "pr_auc": 0.009387299203764733,
+          "prevalence": 0.0004492984032625976,
+          "roc_auc": 0.6367166408891063,
+          "units": 231472
+        },
+        "top_k": {
+          "days": 18,
+          "days_with_positive": 17,
+          "k": 50,
+          "mean_daily_precision_at_k": 0.027777777777777776,
+          "precision_at_k": 0.027777777777777776,
+          "precision_at_k_normalised": 0.2403846153846154,
+          "precision_ceiling": 0.11555555555555555,
+          "recall_at_k": 0.2403846153846154
+        }
+      },
+      "threshold_chosen_on_validation": {
+        "alerts": 635,
+        "alerts_per_day": 39.6875,
+        "cases": 4,
+        "cases_detected": 4,
+        "cases_missed": 0,
+        "cost": 622.0,
+        "false_alerts": 622,
+        "precision": 0.02047244094488189,
+        "recall_units": 0.11926605504587157,
+        "threshold": 0.866718027734977,
+        "true_alerts": 13
+      },
+      "validation": {
+        "cases": [
+          {
+            "best_score": 1.0,
+            "case_id": "case-005",
+            "detected": true,
+            "scenario": "layering",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 0.866718,
+            "case_id": "case-008",
+            "detected": true,
+            "scenario": "mule",
+            "sophistication": "high"
+          },
+          {
+            "best_score": 1.0,
+            "case_id": "case-011",
+            "detected": true,
+            "scenario": "round_tripping",
+            "sophistication": "low"
+          },
+          {
+            "best_score": 1.0,
+            "case_id": "case-014",
+            "detected": true,
+            "scenario": "shell_company",
+            "sophistication": "low"
+          }
+        ],
+        "detection": {
+          "scenario": {
+            "layering": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "mule": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "round_tripping": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "shell_company": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            }
+          },
+          "sophistication": {
+            "high": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "low": {
+              "cases": 2,
+              "detected": 2,
+              "recall": 1.0,
+              "wilson_95": [
+                0.3424,
+                1.0
+              ]
+            },
+            "medium": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            }
+          }
+        },
+        "operating_point": {
+          "alerts": 635,
+          "alerts_per_day": 39.6875,
+          "cases": 4,
+          "cases_detected": 4,
+          "cases_missed": 0,
+          "cost": 622.0,
+          "false_alerts": 622,
+          "precision": 0.02047244094488189,
+          "recall_units": 0.11926605504587157,
+          "threshold": 0.866718027734977,
+          "true_alerts": 13
+        },
+        "ranking": {
+          "positive_units": 109,
+          "pr_auc": 0.004187322637852536,
+          "prevalence": 0.000531606182238501,
+          "roc_auc": 0.5979614430884209,
+          "units": 205039
+        },
+        "top_k": {
+          "days": 16,
+          "days_with_positive": 11,
+          "k": 50,
+          "mean_daily_precision_at_k": 0.0225,
+          "precision_at_k": 0.0225,
+          "precision_at_k_normalised": 0.16513761467889906,
+          "precision_ceiling": 0.13625,
+          "recall_at_k": 0.1651376146788991
+        }
+      }
+    },
+    "xgboost": {
+      "cost_sensitivity_validation": {
+        "10": {
+          "alerts": 1,
+          "alerts_per_day": 0.0625,
+          "cases": 4,
+          "cases_detected": 1,
+          "cases_missed": 3,
+          "cost": 30.0,
+          "false_alerts": 0,
+          "precision": 1.0,
+          "recall_units": 0.009174311926605505,
+          "threshold": 0.7448013424873352,
+          "true_alerts": 1
+        },
+        "100": {
+          "alerts": 1,
+          "alerts_per_day": 0.0625,
+          "cases": 4,
+          "cases_detected": 1,
+          "cases_missed": 3,
+          "cost": 300.0,
+          "false_alerts": 0,
+          "precision": 1.0,
+          "recall_units": 0.009174311926605505,
+          "threshold": 0.7448013424873352,
+          "true_alerts": 1
+        },
+        "1000": {
+          "alerts": 766,
+          "alerts_per_day": 47.875,
+          "cases": 4,
+          "cases_detected": 3,
+          "cases_missed": 1,
+          "cost": 1738.0,
+          "false_alerts": 738,
+          "precision": 0.03655352480417755,
+          "recall_units": 0.25688073394495414,
+          "threshold": 0.7139402627944946,
+          "true_alerts": 28
+        },
+        "200": {
+          "alerts": 1,
+          "alerts_per_day": 0.0625,
+          "cases": 4,
+          "cases_detected": 1,
+          "cases_missed": 3,
+          "cost": 600.0,
+          "false_alerts": 0,
+          "precision": 1.0,
+          "recall_units": 0.009174311926605505,
+          "threshold": 0.7448013424873352,
+          "true_alerts": 1
+        },
+        "50": {
+          "alerts": 1,
+          "alerts_per_day": 0.0625,
+          "cases": 4,
+          "cases_detected": 1,
+          "cases_missed": 3,
+          "cost": 150.0,
+          "false_alerts": 0,
+          "precision": 1.0,
+          "recall_units": 0.009174311926605505,
+          "threshold": 0.7448013424873352,
+          "true_alerts": 1
+        },
+        "500": {
+          "alerts": 766,
+          "alerts_per_day": 47.875,
+          "cases": 4,
+          "cases_detected": 3,
+          "cases_missed": 1,
+          "cost": 1238.0,
+          "false_alerts": 738,
+          "precision": 0.03655352480417755,
+          "recall_units": 0.25688073394495414,
+          "threshold": 0.7139402627944946,
+          "true_alerts": 28
+        }
+      },
+      "test": {
+        "cases": [
+          {
+            "best_score": 0.715107,
+            "case_id": "case-003",
+            "detected": false,
+            "scenario": "structuring",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 0.702671,
+            "case_id": "case-006",
+            "detected": false,
+            "scenario": "layering",
+            "sophistication": "low"
+          },
+          {
+            "best_score": 0.744501,
+            "case_id": "case-009",
+            "detected": false,
+            "scenario": "mule",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 0.743884,
+            "case_id": "case-015",
+            "detected": false,
+            "scenario": "shell_company",
+            "sophistication": "medium"
+          }
+        ],
+        "detection": {
+          "scenario": {
+            "layering": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "mule": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "shell_company": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "structuring": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            }
+          },
+          "sophistication": {
+            "low": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "medium": {
+              "cases": 3,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.5615
+              ]
+            }
+          }
+        },
+        "operating_point": {
+          "alerts": 0,
+          "alerts_per_day": 0.0,
+          "cases": 4,
+          "cases_detected": 0,
+          "cases_missed": 4,
+          "cost": 800.0,
+          "false_alerts": 0,
+          "precision": null,
+          "recall_units": 0.0,
+          "threshold": 0.7448013424873352,
+          "true_alerts": 0
+        },
+        "ranking": {
+          "positive_units": 104,
+          "pr_auc": 0.08488897188925346,
+          "prevalence": 0.0004492984032625976,
+          "roc_auc": 0.9582463368380175,
+          "units": 231472
+        },
+        "top_k": {
+          "days": 18,
+          "days_with_positive": 17,
+          "k": 50,
+          "mean_daily_precision_at_k": 0.05,
+          "precision_at_k": 0.05,
+          "precision_at_k_normalised": 0.4326923076923077,
+          "precision_ceiling": 0.11555555555555555,
+          "recall_at_k": 0.4326923076923077
+        }
+      },
+      "threshold_chosen_on_validation": {
+        "alerts": 1,
+        "alerts_per_day": 0.0625,
+        "cases": 4,
+        "cases_detected": 1,
+        "cases_missed": 3,
+        "cost": 600.0,
+        "false_alerts": 0,
+        "precision": 1.0,
+        "recall_units": 0.009174311926605505,
+        "threshold": 0.7448013424873352,
+        "true_alerts": 1
+      },
+      "validation": {
+        "cases": [
+          {
+            "best_score": 0.71394,
+            "case_id": "case-005",
+            "detected": false,
+            "scenario": "layering",
+            "sophistication": "medium"
+          },
+          {
+            "best_score": 0.744801,
+            "case_id": "case-008",
+            "detected": true,
+            "scenario": "mule",
+            "sophistication": "high"
+          },
+          {
+            "best_score": 0.653124,
+            "case_id": "case-011",
+            "detected": false,
+            "scenario": "round_tripping",
+            "sophistication": "low"
+          },
+          {
+            "best_score": 0.743884,
+            "case_id": "case-014",
+            "detected": false,
+            "scenario": "shell_company",
+            "sophistication": "low"
+          }
+        ],
+        "detection": {
+          "scenario": {
+            "layering": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "mule": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "round_tripping": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            },
+            "shell_company": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            }
+          },
+          "sophistication": {
+            "high": {
+              "cases": 1,
+              "detected": 1,
+              "recall": 1.0,
+              "wilson_95": [
+                0.2065,
+                1.0
+              ]
+            },
+            "low": {
+              "cases": 2,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.6576
+              ]
+            },
+            "medium": {
+              "cases": 1,
+              "detected": 0,
+              "recall": 0.0,
+              "wilson_95": [
+                0.0,
+                0.7935
+              ]
+            }
+          }
+        },
+        "operating_point": {
+          "alerts": 1,
+          "alerts_per_day": 0.0625,
+          "cases": 4,
+          "cases_detected": 1,
+          "cases_missed": 3,
+          "cost": 600.0,
+          "false_alerts": 0,
+          "precision": 1.0,
+          "recall_units": 0.009174311926605505,
+          "threshold": 0.7448013424873352,
+          "true_alerts": 1
+        },
+        "ranking": {
+          "positive_units": 109,
+          "pr_auc": 0.11419483815233682,
+          "prevalence": 0.000531606182238501,
+          "roc_auc": 0.9332444911822654,
+          "units": 205039
+        },
+        "top_k": {
+          "days": 16,
+          "days_with_positive": 11,
+          "k": 50,
+          "mean_daily_precision_at_k": 0.0375,
+          "precision_at_k": 0.0375,
+          "precision_at_k_normalised": 0.2752293577981651,
+          "precision_ceiling": 0.13625,
+          "recall_at_k": 0.27522935779816515
+        }
+      }
+    }
+  },
+  "rules_fired_rows_test": {
+    "R-CHAN-01": 1309,
+    "R-DORM-01": 2,
+    "R-RAPID-01": 618,
+    "R-STRUCT-01": 0
+  },
+  "run": {
+    "costs": {
+      "c_fn": 200.0,
+      "c_fp": 1.0
+    },
+    "k_alerts_per_day": 50,
+    "labels_file": "labels-full-seed3.csv",
+    "layer_versions": {
+      "isolation_forest": "0.1.0",
+      "rules": "1.0.0",
+      "xgboost": "0.1.0"
+    },
+    "model_seed": 45,
+    "profile": "full",
+    "seed": 3,
+    "test_block_evaluated": true,
+    "timings": {
+      "features_s": 12.8,
+      "isolation_forest_fit_s": 2.1,
+      "scoring_s": 9.5,
+      "total_s": 68.4,
+      "xgboost_fit_s": 16.5
+    },
+    "transactions_file": "dataset-full-seed3.csv",
+    "versions": {
+      "numpy": "2.5.4",
+      "pandas": "3.0.6",
+      "python": "3.12.3",
+      "scikit_learn": "1.9.1",
+      "xgboost": "3.4.1"
+    }
+  },
+  "split": {
+    "test": [
+      73,
+      90
+    ],
+    "train": [
+      8,
+      56
+    ],
+    "validation": [
+      57,
+      72
+    ],
+    "warmup": [
+      1,
+      7
+    ]
+  },
+  "warnings": [],
+  "xgboost_feature_importance": {
+    "amount_to_avg_ratio": 0.01484,
+    "avg_in_to_out_delay_s_24h": 0.027173,
+    "cash_share_24h": 0.026349,
+    "cash_share_7d": 0.039817,
+    "current_amount_mad": 0.023196,
+    "current_flow_in": 0.009681,
+    "distinct_cities_24h": 0.084746,
+    "distinct_counterparties_1h": 0.013959,
+    "distinct_counterparties_24h": 0.070056,
+    "distinct_counterparties_7d": 0.046228,
+    "inflow_outflow_ratio_24h": 0.042467,
+    "international_share_24h": 0.025024,
+    "near_threshold_share_24h": 0.033278,
+    "near_threshold_share_7d": 0.05754,
+    "total_amount_1h_mad": 0.03295,
+    "total_amount_24h_mad": 0.066206,
+    "total_amount_7d_mad": 0.292114,
+    "tx_count_1h": 0.016285,
+    "tx_count_24h": 0.033037,
+    "tx_count_7d": 0.028534,
+    "tx_count_7d_to_30d": 0.01652
+  }
+}

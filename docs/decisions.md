@@ -36,6 +36,14 @@
 - Le checkpoint est monté dans `./checkpoints` et le service Spark est derrière le profil Compose `streaming`; lancement via `python manage.py stream`. Le broker garde le listener hôte `localhost:9092` et ajoute `kafka:29092` pour les conteneurs. La limite mémoire Spark est 2 Gio et le master `local[2]`. Aucun changement `.env` n'est requis; le mot de passe PostgreSQL existant est transmis par Compose.
 - Kafka Structured Streaming garantit au mieux une écriture « au moins une fois » vers Kafka : un rejeu peut dupliquer des messages après panne. PostgreSQL est protégé par upsert sur la clé logique; les consommateurs Kafka doivent dédupliquer par `(account_id, tx_id, side)`. Ne pas présenter le pipeline complet comme « exactly once ».
 - Le délai watermark de 2 h reste provisoire (Q-02 non tranchée). Les événements expirés au-delà du watermark sont exclus des variables et doivent être surveillés via le journal de progression/les métriques de données tardives.
+
+## Phase 4 — règles et modèles de base (proposition, Mounir)
+
+- Score de règle : 0 ou 0,5 à 1,0 selon le dépassement du seuil, maximum sur les règles ; alternative écartée : score binaire (trop d'égalités pour le classement top-k).
+- Unité de calcul par événement, alerte par (compte, jour) au maximum du jour ; entraînement XGBoost sur tous les événements de l'entraînement avec `scale_pos_weight` automatique ; alternative non essayée : sous-échantillonnage des négatifs.
+- Labels d'entraînement censurés au dernier jour d'entraînement (L-5) ; seuil choisi sur la validation seulement (L-7).
+- Deux variables d'extension hors contrat v1 pour les règles ; à valider avec Mouad.
+
 - Pour rendre les quatre règles du prompt exécutables, trois signaux supplémentaires sont proposés : `days_since_previous_tx`, `current_channel_cash`, `current_channel_international`. Ils sont émis par Spark dans la carte `features`; approbation et incrément éventuel de `feature_version` restent à faire avant gel du contrat.
 
 ## Phase 4 — modèles de base et évaluation (implémentation à valider)
@@ -44,4 +52,4 @@
 - Découpage conservé comme dans `docs/evaluation_plan.md`: jours 8–56 train, 57–72 validation, 73–90 test, sans permutation. Un modèle IF et XGBoost est entraîné séparément par graine (Option A); les seuils d'alerte sont calibrés sur validation par coût et capacité k/jour. Les hyperparamètres XGBoost restent fixés dans le YAML pour cette comparaison de base; aucune recherche sur le test.
 - Comparatif effectivement produit pour la démonstration: profil `light`, graine 44; un seul cas de test, donc métriques exploratoires uniquement. Les rapports sont `reports/model_comparison_light_seed44.md/.json`. SAML-D reste une référence de calibration envisagée, sans entraînement ni mélange externe. Le rôle de la dataset externe demeure à confirmer par le professeur; les résultats sur le simulateur ne sont pas transposables à une banque réelle.
 - Le worker scorer consomme `features` et produit `scores`/`alerts` via Kafka pour le modèle sélectionné dans la configuration. Le modèle par défaut est XGBoost; aucun label n'est monté dans le conteneur.
-- La sélection d'un modèle « gagnant » et d'un ensemble reste en attente des mesures. L'ensemble pondéré/stacking, graphe, SHAP et dashboard complet sont hors de ce gate (phase 5).
+- Aucun modèle « gagnant » n'est retenu : un seul cas de test ne permet pas une sélection fiable. L'ensemble pondéré/stacking, graphe, SHAP et dashboard complet sont hors de ce gate (phase 5).

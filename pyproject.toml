@@ -11,14 +11,9 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<9", "ruff>=0.8,<1", "pyyaml>=6,<7"]
+models = ["numpy>=1.26", "pandas>=2.0", "scikit-learn>=1.4", "xgboost>=2.0,<3", "joblib>=1.3", "pyyaml>=6,<7"]
 streaming = ["confluent-kafka>=2.6,<3", "psycopg[binary]>=3.2,<4", "pyspark==3.5.8", "pandas>=2.0,<3", "pyarrow>=12,<13", "numpy>=1.26,<2"]
-ml = [
-  "numpy>=1.26,<3",
-  "scikit-learn>=1.4,<2",
-  "xgboost>=2.1,<3",
-  "joblib>=1.3,<2",
-  "pyyaml>=6,<7",
-]
+ml = ["numpy>=1.26,<3", "scikit-learn>=1.4,<2", "xgboost>=2.1,<3", "joblib>=1.3,<2", "pyyaml>=6,<7"]
 scoring = ["confluent-kafka>=2.6,<3"]
 
 [tool.pytest.ini_options]

@@ -31,8 +31,8 @@ Mesures observées sur cette exécution locale : débit de micro-batch Spark ent
 ```bash
 source .venv/bin/activate
 python manage.py simulate --profile light --seed 44 --report --report-output reports/dataset_light_seed44.json
-AML_SCORING_CONFIG=config/scoring_demo.yaml python manage.py train
-AML_SCORING_CONFIG=config/scoring_demo.yaml python manage.py evaluate
+AML_SCORING_CONFIG=config/scoring_demo.yaml python manage.py train-scoring
+AML_SCORING_CONFIG=config/scoring_demo.yaml python manage.py evaluate-scoring
 ```
 
 Les topics Docker sont isolés pour ne pas réutiliser le flux normal du projet. Les services `spark` et `scorer` sont pilotés par `manage.py stream` et `manage.py score`; voir les overrides de démonstration dans le journal de phase 4. Aucun `.env` n’a été modifié.

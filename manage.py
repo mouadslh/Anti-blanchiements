@@ -106,7 +106,7 @@ def phase0_smoke() -> None:
 def main() -> int:
     load_env()
     parser = argparse.ArgumentParser(description="AML project command line")
-    parser.add_argument("command", choices=("up", "down", "simulate", "train", "evaluate", "test", "reset", "stream", "score"))
+    parser.add_argument("command", choices=("up", "down", "simulate", "train", "train-scoring", "evaluate", "evaluate-scoring", "test", "reset", "stream", "score"))
     parser.add_argument("--report", action="store_true", help="Print a simulation statistics report")
     parser.add_argument("--report-output", type=Path, help="Also save the JSON report at this path")
     parser.add_argument("--profile", choices=("light", "full"), default="light", help="Simulation population profile")
@@ -144,14 +144,41 @@ def main() -> int:
             result = unittest.TextTestRunner(verbosity=2).run(suite)
             return 0 if result.wasSuccessful() else 1
         elif args.command == "train":
+            # Offline baseline: rules, Isolation Forest, XGBoost (needs `pip install -e ".[models]"`).
+            from aml.models.pipeline import run_baseline, write_report
+
+            stem = f"{args.profile}-seed{args.seed}"
+            transactions_path = args.output or ROOT / "data" / "transactions" / f"dataset-{stem}.csv"
+            labels_path = args.labels_output or ROOT / "data" / "labels" / f"labels-{stem}.csv"
+            for required in (transactions_path, labels_path):
+                if not Path(required).exists():
+                    raise ValueError(
+                        f"{required} not found: run `python manage.py simulate --profile "
+                        f"{args.profile} --seed {args.seed}` first"
+                    )
+            report = run_baseline(
+                transactions_path, labels_path, seed=args.seed, profile=args.profile,
+                artifacts_dir=ROOT / "artifacts" / "models" / stem,
+            )
+            report_path = args.report_output or ROOT / "reports" / f"phase4_baseline_{stem}.json"
+            write_report(report, report_path)
+            print(f"Rapport enregistré : {report_path}")
+            for layer, content in report["layers"].items():
+                test = content["test"]
+                print(
+                    f"{layer:17s} PR-AUC test={test['ranking']['pr_auc']} "
+                    f"cas détectés={test['operating_point']['cases_detected']}/"
+                    f"{test['operating_point']['cases']}"
+                )
+        elif args.command == "train-scoring":
             from aml.scoring.models import load_config, train_all
 
-            result = train_all(load_config(os.environ.get("AML_SCORING_CONFIG", "config/scoring.yaml")))
+            result = train_all(load_config(os.environ.get("AML_SCORING_CONFIG", "config/scoring_baselines.yaml")))
             print(json.dumps(result, indent=2, ensure_ascii=False))
-        elif args.command == "evaluate":
+        elif args.command in {"evaluate", "evaluate-scoring"}:
             from aml.scoring.models import evaluate_all, load_config
 
-            config = load_config(os.environ.get("AML_SCORING_CONFIG", "config/scoring.yaml"))
+            config = load_config(os.environ.get("AML_SCORING_CONFIG", "config/scoring_baselines.yaml"))
             report = evaluate_all(config)
             print(f"Rapport d'évaluation : {ROOT / config['report_markdown']}")
             print(json.dumps(report["aggregate_test"], indent=2, ensure_ascii=False))

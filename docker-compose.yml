@@ -102,7 +102,7 @@ services:
       dockerfile: Dockerfile.scoring
     working_dir: /app
     environment:
-      AML_SCORING_CONFIG: ${AML_SCORING_CONFIG:-/app/config/scoring.yaml}
+      AML_SCORING_CONFIG: ${AML_SCORING_CONFIG:-/app/config/scoring_baselines.yaml}
       AML_MODEL_ARTIFACT_DIR: ${AML_MODEL_ARTIFACT_DIR:-/artifacts/models}
       AML_SCORING_INPUT_TOPIC: ${AML_SCORING_INPUT_TOPIC:-features}
       AML_SCORING_SCORES_TOPIC: ${AML_SCORING_SCORES_TOPIC:-scores}

@@ -1,48 +1,87 @@
-# Evaluation v1: defaults align with docs/evaluation_plan.md. Values are hypotheses.
-dataset_profile: full
-seeds: [42, 43, 44]
-transactions_pattern: data/transactions/dataset-{profile}-seed{seed}.csv
-labels_pattern: data/labels/labels-{profile}-seed{seed}.csv
-artifact_dir: artifacts/models
-report_json: reports/model_comparison_full.json
-report_markdown: reports/model_comparison_full.md
+# Paramètres de la détection (phase 4) : règles, découpage temporel, modèles, coûts.
+#
+# TOUTES les valeurs ci-dessous sont des HYPOTHÈSES de simulation [H], réglables.
+# Aucune n'est une obligation légale ou un seuil réglementaire marocain.
+# Les seuils des règles ne sont pas ajustés sur le bloc de test (docs/evaluation_plan.md, L-7).
 
+# Seuil de référence supposé (H-01). Doit rester égal à `reporting_threshold_mad` de
+# config/streaming.json (vérifié par tests/test_rules.py) : les variables « proche du seuil »
+# du flux et les règles parlent du même seuil.
+reporting_threshold: 100000
+
+# Paramètres des variables (mêmes noms que config/streaming.json).
 features:
-  reporting_threshold_mad: 100000
   history_days: 30
   min_history_events: 3
+  near_threshold_band: 0.9        # bande [0,9 x seuil ; seuil[ (contrat C-07)
+  baseline_window_days: [7, 30]   # extension : activité entre J-30 et J-7 (règle « dormant »)
 
+# --- Règles de base (src/aml/models/rules.py) ------------------------------------------------
+# Un score de règle vaut 0 si la règle ne se déclenche pas ; sinon 0,5 quand la valeur clé atteint
+# juste son seuil, et 1,0 quand elle atteint `saturation_multiple` fois ce seuil (interpolation
+# linéaire). Le score de la couche `rules` est le maximum des règles déclenchées.
 rules:
-  structuring: {min_tx_count_7d: 3, min_near_threshold_share: 0.30, min_cash_share: 0.40, score: 0.95}
-  rapid_in_out: {min_tx_count_1h: 2, max_delay_seconds: 21600, min_inflow_outflow_ratio: 0.70, score: 0.90}
-  dormant_then_active: {min_days_dormant: 14, min_amount_ratio: 3.0, min_total_amount_24h_mad: 100000, score: 0.80}
-  high_risk_channel: {min_amount_24h_mad: 10000, score: 0.65}
+  version: "1.0.0"
+  saturation_multiple: 2.0
+  structuring:                    # R-STRUCT-01 : fractionnement sous le seuil de référence
+    enabled: true
+    min_near_threshold_count_7d: 3      # nombre d'opérations dans la bande sous le seuil, sur 7 j
+    min_cash_share_7d: 0.5              # part d'opérations en espèces sur 7 j
+  rapid_in_out:                   # R-RAPID-01 : entrée puis sortie rapide de fonds
+    enabled: true
+    max_avg_delay_s_24h: 21600          # délai moyen entrée -> sortie <= 6 h
+    min_total_amount_24h_mad: 10000     # volume minimal sur 24 h
+    min_inflow_outflow_ratio_24h: 0.8   # la plus grande part des entrées ressort
+    max_inflow_outflow_ratio_24h: 1.25
+  dormant_then_active:            # R-DORM-01 : compte peu actif puis brusquement actif
+    enabled: true
+    max_baseline_tx_count: 2            # <= 2 opérations entre J-30 et J-7
+    min_tx_count_7d: 8                  # >= 8 opérations sur les 7 derniers jours
+    min_total_amount_7d_mad: 50000
+  risky_channel:                  # R-CHAN-01 : volume élevé sur des canaux sensibles
+    enabled: true
+    min_risky_share_24h: 0.6            # part espèces + virements internationaux sur 24 h
+    min_tx_count_24h: 3
+    min_total_amount_24h_mad: 100000
 
+# --- Évaluation (docs/evaluation_plan.md, sections 2, 4 et 5) ---------------------------------
 evaluation:
-  warmup_days: 7
-  train_days: [8, 56]
-  validation_days: [57, 72]
-  test_days: [73, 90]
   k_alerts_per_day: 50
-  c_fp: 1
-  c_fn: 200
-  sensitivity_ratios: [10, 50, 100, 200, 500, 1000]
-  sensitivity_ks: [10, 25, 50, 100, 200]
-  max_iforest_rows: 20000
-  xgboost:
-    n_estimators: 120
-    max_depth: 4
-    learning_rate: 0.08
-    subsample: 0.85
-    colsample_bytree: 0.85
-    reg_lambda: 2.0
+  # Jour 1 = premier jour simulé. Bornes incluses (plan 2.2).
+  split:
+    warmup_days: [1, 7]
+    train_days: [8, 56]
+    validation_days: [57, 72]
+    test_days: [73, 90]
+  costs:
+    c_fp: 1
+    c_fn: 200
+    sensitivity_ratios: [10, 50, 100, 200, 500, 1000]
+  seeds: [1, 2, 3, 4, 5]
 
-streaming:
-  bootstrap_servers: kafka:29092
-  input_topic: features
-  scores_topic: scores
-  alerts_topic: alerts
-  consumer_group: aml-scorer-v1
-  operating_model: xgboost
-  model_seed: 42
-  poll_seconds: 1.0
+# --- Modèles -----------------------------------------------------------------------------------
+models:
+  random_seed: 42
+  isolation_forest:
+    version: "0.1.0"
+    n_estimators: 200
+    max_samples: 256
+    # Fraction supposée anormale : n'influence pas le score continu utilisé ici (score_samples),
+    # conservée pour la lisibilité du paramétrage.
+    contamination: "auto"
+    score_quantile_grid: 1001           # grille d'étalonnage du score sur l'entraînement
+    calibration_sample_rows: 100000     # lignes d'entraînement (tirage à graine fixe) pour l'étalonnage
+  xgboost:
+    version: "0.1.0"
+    n_estimators: 400
+    early_stopping_rounds: 30           # critère calculé sur la validation uniquement
+    learning_rate: 0.05
+    max_depth: 4
+    min_child_weight: 1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    tree_method: hist
+    n_jobs: 1                           # 1 thread : exécutions identiques à graine égale
+    # Déséquilibre : poids de la classe positive. `auto` = nb négatifs / nb positifs observés
+    # sur l'entraînement ; un nombre fixe est aussi accepté.
+    scale_pos_weight: auto
