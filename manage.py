@@ -106,18 +106,19 @@ def phase0_smoke() -> None:
 def main() -> int:
     load_env()
     parser = argparse.ArgumentParser(description="AML project command line")
-    parser.add_argument("command", choices=("up", "down", "simulate", "train", "evaluate", "test", "reset", "stream"))
+    parser.add_argument("command", choices=("up", "down", "simulate", "train", "train-scoring", "evaluate", "evaluate-scoring", "test", "reset", "stream", "score"))
     parser.add_argument("--report", action="store_true", help="Print a simulation statistics report")
     parser.add_argument("--report-output", type=Path, help="Also save the JSON report at this path")
     parser.add_argument("--profile", choices=("light", "full"), default="light", help="Simulation population profile")
     parser.add_argument("--seed", type=int, default=42, help="Deterministic random seed")
-    parser.add_argument("--output", type=Path, help="CSV path: output of simulate, input transactions of train (default: data/transactions/dataset-<profile>-seed<seed>.csv, or normal-... with --normal-only)")
+    parser.add_argument("--output", type=Path, help="CSV output path (default: data/transactions/dataset-<profile>-seed<seed>.csv, or normal-... with --normal-only)")
     parser.add_argument("--normal-only", action="store_true", help="Generate normal behaviour only: no AML scenario, no labels")
     parser.add_argument("--scenario-config", type=Path, help="YAML overrides for the AML scenarios (see config/simulator.yaml)")
     parser.add_argument("--labels-output", type=Path, help="Ground-truth labels CSV (default: data/labels/labels-<profile>-seed<seed>.csv)")
     parser.add_argument("--replay", action="store_true", help="Replay the generated CSV to Kafka")
     parser.add_argument("--store-raw", action="store_true", help="Idempotently store generated events in PostgreSQL")
     parser.add_argument("--rate", type=int, default=100, help="Kafka replay rate, 1 to 500 events/second")
+    parser.add_argument("--topic", default="transactions", help="Kafka topic for --replay")
     parser.add_argument("--duration", type=float, help="Stop Kafka replay after this many seconds")
     args = parser.parse_args()
     try:
@@ -135,6 +136,9 @@ def main() -> int:
             # The optional profile keeps the Spark worker out of the base stack.
             compose("--profile", "streaming", "up", "-d", "--build", "spark")
             print("Job Spark lancé. Logs : docker compose --profile streaming logs -f spark")
+        elif args.command == "score":
+            compose("--profile", "scoring", "up", "-d", "--build", "scorer")
+            print("Scorer Kafka lancé. Logs : docker compose --profile scoring logs -f scorer")
         elif args.command == "test":
             suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
             result = unittest.TextTestRunner(verbosity=2).run(suite)
@@ -166,6 +170,18 @@ def main() -> int:
                     f"cas détectés={test['operating_point']['cases_detected']}/"
                     f"{test['operating_point']['cases']}"
                 )
+        elif args.command == "train-scoring":
+            from aml.scoring.models import load_config, train_all
+
+            result = train_all(load_config(os.environ.get("AML_SCORING_CONFIG", "config/scoring_baselines.yaml")))
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        elif args.command in {"evaluate", "evaluate-scoring"}:
+            from aml.scoring.models import evaluate_all, load_config
+
+            config = load_config(os.environ.get("AML_SCORING_CONFIG", "config/scoring_baselines.yaml"))
+            report = evaluate_all(config)
+            print(f"Rapport d'évaluation : {ROOT / config['report_markdown']}")
+            print(json.dumps(report["aggregate_test"], indent=2, ensure_ascii=False))
         elif args.command == "simulate":
             from aml.simulator.dataset import build_dataset, write_dataset
             from aml.simulator.labels import scenario_report
@@ -222,8 +238,8 @@ def main() -> int:
             if args.replay:
                 bootstrap_servers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
                 sent = publish_kafka(output, rate=args.rate, bootstrap_servers=bootstrap_servers,
-                                     duration=args.duration)
-                print(f"{sent} transaction(s) publiées dans Kafka:transactions")
+                                     duration=args.duration, topic=args.topic)
+                print(f"{sent} transaction(s) publiées dans Kafka:{args.topic}")
             if args.store_raw:
                 dsn = os.environ.get("DATABASE_URL") or (
                     f"host={os.environ.get('POSTGRES_HOST', 'localhost')} "

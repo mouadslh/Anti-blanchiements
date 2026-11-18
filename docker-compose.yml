@@ -77,6 +77,10 @@ services:
     working_dir: /app
     environment:
       AML_STREAMING_CONFIG: /app/config/streaming.json
+      AML_STREAMING_SOURCE_TOPIC: ${AML_STREAMING_SOURCE_TOPIC:-transactions}
+      AML_STREAMING_FEATURES_TOPIC: ${AML_STREAMING_FEATURES_TOPIC:-features}
+      AML_STREAMING_CHECKPOINT_LOCATION: ${AML_STREAMING_CHECKPOINT_LOCATION:-/state/features-v1}
+      AML_STREAMING_BOOTSTRAP_SERVERS: kafka:29092
       PYSPARK_PYTHON: python3
       POSTGRES_DB: ${POSTGRES_DB:-aml}
       POSTGRES_USER: ${POSTGRES_USER:-aml}
@@ -90,6 +94,29 @@ services:
         condition: service_healthy
     mem_limit: 2g
     command: ["spark-submit", "--master", "local[2]", "--conf", "spark.sql.shuffle.partitions=2", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.8", "/app/src/aml/streaming/feature_job.py"]
+
+  scorer:
+    profiles: ["scoring"]
+    build:
+      context: .
+      dockerfile: Dockerfile.scoring
+    working_dir: /app
+    environment:
+      AML_SCORING_CONFIG: ${AML_SCORING_CONFIG:-/app/config/scoring_baselines.yaml}
+      AML_MODEL_ARTIFACT_DIR: ${AML_MODEL_ARTIFACT_DIR:-/artifacts/models}
+      AML_SCORING_INPUT_TOPIC: ${AML_SCORING_INPUT_TOPIC:-features}
+      AML_SCORING_SCORES_TOPIC: ${AML_SCORING_SCORES_TOPIC:-scores}
+      AML_SCORING_ALERTS_TOPIC: ${AML_SCORING_ALERTS_TOPIC:-alerts}
+      AML_SCORING_MODEL: ${AML_SCORING_MODEL:-xgboost}
+      AML_SCORING_MODEL_SEED: ${AML_SCORING_MODEL_SEED:-42}
+      AML_SCORING_BOOTSTRAP_SERVERS: kafka:29092
+    volumes:
+      - ./artifacts:/artifacts:ro
+    depends_on:
+      kafka:
+        condition: service_healthy
+    mem_limit: 1g
+    command: ["python", "-m", "aml.scoring.consumer"]
 
 volumes:
   postgres_data:

@@ -255,7 +255,7 @@ def report_json(report: dict[str, Any]) -> str:
 
 
 def publish_kafka(path: str | Path, *, rate: int, bootstrap_servers: str,
-                  duration: float | None = None) -> int:
+                  duration: float | None = None, topic: str = "transactions") -> int:
     """Replay a CSV into Kafka. Requires the optional ``streaming`` dependencies."""
     try:
         from confluent_kafka import Producer
@@ -273,7 +273,7 @@ def publish_kafka(path: str | Path, *, rate: int, bootstrap_servers: str,
     for event in read_csv(path):
         if duration is not None and __import__("time").monotonic() - started >= duration:
             break
-        producer.produce("transactions", key=event["source_account_id"],
+        producer.produce(topic, key=event["source_account_id"],
                          value=json.dumps(event, ensure_ascii=False, separators=(",", ":")))
         producer.poll(0)
         sent += 1

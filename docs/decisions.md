@@ -43,3 +43,13 @@
 - Unité de calcul par événement, alerte par (compte, jour) au maximum du jour ; entraînement XGBoost sur tous les événements de l'entraînement avec `scale_pos_weight` automatique ; alternative non essayée : sous-échantillonnage des négatifs.
 - Labels d'entraînement censurés au dernier jour d'entraînement (L-5) ; seuil choisi sur la validation seulement (L-7).
 - Deux variables d'extension hors contrat v1 pour les règles ; à valider avec Mouad.
+
+- Pour rendre les quatre règles du prompt exécutables, trois signaux supplémentaires sont proposés : `days_since_previous_tx`, `current_channel_cash`, `current_channel_international`. Ils sont émis par Spark dans la carte `features`; approbation et incrément éventuel de `feature_version` restent à faire avant gel du contrat.
+
+## Phase 4 — modèles de base et évaluation (implémentation à valider)
+
+- Un exemple d'apprentissage/évaluation est le dernier événement observé de chaque compte et jour UTC; ses features sont les mêmes calculs arrière que Spark, calculés à `as_of`. Les labels d'intervalle marquent la cible après extraction; identifiants de compte, cas, typologie et niveau sont exclus de la matrice.
+- Découpage conservé comme dans `docs/evaluation_plan.md`: jours 8–56 train, 57–72 validation, 73–90 test, sans permutation. Un modèle IF et XGBoost est entraîné séparément par graine (Option A); les seuils d'alerte sont calibrés sur validation par coût et capacité k/jour. Les hyperparamètres XGBoost restent fixés dans le YAML pour cette comparaison de base; aucune recherche sur le test.
+- Comparatif effectivement produit pour la démonstration: profil `light`, graine 44; un seul cas de test, donc métriques exploratoires uniquement. Les rapports sont `reports/model_comparison_light_seed44.md/.json`. SAML-D reste une référence de calibration envisagée, sans entraînement ni mélange externe. Le rôle de la dataset externe demeure à confirmer par le professeur; les résultats sur le simulateur ne sont pas transposables à une banque réelle.
+- Le worker scorer consomme `features` et produit `scores`/`alerts` via Kafka pour le modèle sélectionné dans la configuration. Le modèle par défaut est XGBoost; aucun label n'est monté dans le conteneur.
+- Aucun modèle « gagnant » n'est retenu : un seul cas de test ne permet pas une sélection fiable. L'ensemble pondéré/stacking, graphe, SHAP et dashboard complet sont hors de ce gate (phase 5).

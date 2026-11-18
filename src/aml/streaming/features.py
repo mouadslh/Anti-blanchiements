@@ -176,6 +176,16 @@ def calculate_features(
             delays.append((outbound.timestamp - previous.timestamp).total_seconds())
     features["avg_in_to_out_delay_s_24h"] = round(sum(delays) / len(delays), 3) if delays else None
     features["distinct_cities_24h"] = len({event.city for event in day_events})
+    previous = max(ordered_history, key=lambda event: event.order_key, default=None)
+    features["days_since_previous_tx"] = (
+        round((as_of - previous.timestamp).total_seconds() / 86400, 6)
+        if previous is not None
+        else None
+    )
+    features["current_channel_cash"] = float(current.channel in CASH_CHANNELS)
+    features["current_channel_international"] = float(
+        current.channel == "international_transfer"
+    )
     return features
 
 

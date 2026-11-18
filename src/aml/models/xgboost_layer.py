@@ -93,7 +93,9 @@ class XGBoostLayer:
             raise RuntimeError("fit() must be called first")
         target = Path(directory)
         target.mkdir(parents=True, exist_ok=True)
-        self.model.save_model(target / "xgboost.json")
+        # Save the native booster directly. XGBoost 2.1's sklearn wrapper calls
+        # an estimator-type hook that newer scikit-learn releases removed.
+        self.model.get_booster().save_model(target / "xgboost.json")
         (target / "xgboost_meta.json").write_text(
             json.dumps(
                 {"version": self.version, "seed": self.seed, "features": self.feature_names,

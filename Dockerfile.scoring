@@ -1,0 +1,15 @@
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
+
+WORKDIR /app
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN pip install --no-cache-dir '.[ml,scoring]'
+
+COPY config/scoring.yaml ./config/scoring.yaml
+COPY config/scoring_baselines.yaml ./config/scoring_baselines.yaml
+COPY config/scoring_demo.yaml ./config/scoring_demo.yaml
+CMD ["python", "-m", "aml.scoring.consumer"]

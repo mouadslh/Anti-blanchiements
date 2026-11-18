@@ -1,0 +1,44 @@
+# Configuration d'une démonstration courte, non utilisée pour une conclusion robuste.
+dataset_profile: light
+seeds: [44]
+transactions_pattern: data/transactions/dataset-{profile}-seed{seed}.csv
+labels_pattern: data/labels/labels-{profile}-seed{seed}.csv
+artifact_dir: artifacts/models-light-demo
+report_json: reports/model_comparison_light_seed44.json
+report_markdown: reports/model_comparison_light_seed44.md
+features:
+  reporting_threshold_mad: 100000
+  history_days: 30
+  min_history_events: 3
+rules:
+  structuring: {min_tx_count_7d: 3, min_near_threshold_share: 0.30, min_cash_share: 0.40, score: 0.95}
+  rapid_in_out: {min_tx_count_1h: 2, max_delay_seconds: 21600, min_inflow_outflow_ratio: 0.70, score: 0.90}
+  dormant_then_active: {min_days_dormant: 14, min_amount_ratio: 3.0, min_total_amount_24h_mad: 100000, score: 0.80}
+  high_risk_channel: {min_amount_24h_mad: 10000, score: 0.65}
+evaluation:
+  warmup_days: 7
+  train_days: [8, 56]
+  validation_days: [57, 72]
+  test_days: [73, 90]
+  k_alerts_per_day: 50
+  c_fp: 1
+  c_fn: 200
+  sensitivity_ratios: [10, 50, 100, 200, 500, 1000]
+  sensitivity_ks: [10, 25, 50, 100, 200]
+  max_iforest_rows: 20000
+  xgboost:
+    n_estimators: 120
+    max_depth: 4
+    learning_rate: 0.08
+    subsample: 0.85
+    colsample_bytree: 0.85
+    reg_lambda: 2.0
+streaming:
+  bootstrap_servers: kafka:29092
+  input_topic: features_phase4
+  scores_topic: scores_phase4
+  alerts_topic: alerts_phase4
+  consumer_group: aml-scorer-light-demo
+  operating_model: xgboost
+  model_seed: 44
+  poll_seconds: 1.0
