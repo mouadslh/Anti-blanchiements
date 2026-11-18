@@ -185,8 +185,13 @@ Remarque : ce format remplace `window_start` / `window_end` de la proposition ac
 | `avg_in_to_out_delay_s_24h` | délai moyen, en secondes, entre une entrée et la sortie suivante | 24h | aucune paire |
 | `cash_share_{H}` | part des événements en canal espèces | 24h, 7d | aucun événement |
 | `distinct_cities_24h` *(proposée)* | villes distinctes | 24h | jamais |
+| `days_since_previous_tx` *(ajout phase 4, à valider)* | temps depuis l'événement précédent du compte, en jours simulés | historique | aucun événement précédent |
+| `current_channel_cash` *(ajout phase 4, à valider)* | indicateur 0/1 si l'événement déclencheur est en espèces | événement déclencheur | jamais |
+| `current_channel_international` *(ajout phase 4, à valider)* | indicateur 0/1 si le canal déclencheur est un virement international | événement déclencheur | jamais |
 
 Règles de nommage : `snake_case`, horizon en suffixe, unité dans le nom quand elle n'est pas évidente (`_mad`, `_s`). Les paramètres (`REPORTING_THRESHOLD`, `history_days`, `min_history_events`, tailles de fenêtre) sont lus dans `config/scoring.yaml` ; ils ne sont pas dans le message. Les variables « à ajouter » de `typologies.md` autres que les villes distinctes (écart relatif entrée-sortie, répétition de montants, sorties de type paie) sont **reportées** à une v2 pour ne pas élargir le contrat avant la phase 4.
+
+Les trois variables complémentaires ci-dessus servent uniquement à rendre exécutables les règles de base exigées par le prompt (activation après période dormante et canaux à risque). Ce sont des extensions proposées en phase 4; leur présence dans `feature_version=1` doit être confirmée par les deux étudiants avant de geler le contrat.
 
 Exemple (compte du dépôt `tx-00012345`, troisième dépôt de la journée) :
 
@@ -214,7 +219,10 @@ Exemple (compte du dépôt `tx-00012345`, troisième dépôt de la journée) :
     "avg_in_to_out_delay_s_24h": null,
     "cash_share_24h": 1.0,
     "cash_share_7d": 0.89,
-    "distinct_cities_24h": 2
+    "distinct_cities_24h": 2,
+    "days_since_previous_tx": 0.17,
+    "current_channel_cash": 1.0,
+    "current_channel_international": 0.0
   }
 }
 ```

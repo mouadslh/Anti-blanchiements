@@ -60,6 +60,18 @@ def _duration_seconds(value: str) -> int:
 def load_config(path: str | Path | None = None) -> dict[str, Any]:
     config_path = Path(path or os.environ.get("AML_STREAMING_CONFIG", "config/streaming.json"))
     config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["source_topic"] = os.environ.get(
+        "AML_STREAMING_SOURCE_TOPIC", config["source_topic"]
+    )
+    config["features_topic"] = os.environ.get(
+        "AML_STREAMING_FEATURES_TOPIC", config["features_topic"]
+    )
+    config["checkpoint_location"] = os.environ.get(
+        "AML_STREAMING_CHECKPOINT_LOCATION", config["checkpoint_location"]
+    )
+    config["bootstrap_servers"] = os.environ.get(
+        "AML_STREAMING_BOOTSTRAP_SERVERS", config["bootstrap_servers"]
+    )
     config["postgres_password"] = os.environ.get(
         "POSTGRES_PASSWORD", config.get("postgres_password", "")
     )
